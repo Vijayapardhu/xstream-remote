@@ -1,0 +1,1115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
+<meta name="theme-color" content="#07080B">
+<title>Xstream Remote</title>
+<style>
+  :root{
+    --bg:#07080B; --panel:#101319; --panel2:#151922; --panel3:#1C212B;
+    --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.12);
+    --txt:#F3F5F9; --dim:#98A0B0; --dim2:#626A79;
+    --red:#FF3B47; --red2:#FF7A45; --green:#2ED573; --amber:#FFB020;
+    --ease:cubic-bezier(.2,.7,.2,1);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html,body{height:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--txt);overflow:hidden;
+    font-family:"Roboto","Helvetica Neue",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;user-select:none;overscroll-behavior:none;
+  }
+  body::before{
+    content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(42% 30% at 12% 0%, rgba(255,59,71,.16), transparent 62%),
+      radial-gradient(36% 28% at 100% 8%, rgba(255,122,69,.07), transparent 60%),
+      radial-gradient(60% 44% at 50% 118%, rgba(70,90,130,.12), transparent 62%);
+  }
+  button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+  input,textarea{font-family:inherit}
+  .ic{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;
+      stroke-linecap:round;stroke-linejoin:round}
+  .ic.big{width:38px;height:38px;stroke-width:1.55}
+
+  .shell{position:relative;z-index:1;height:100vh;height:100dvh;display:flex;flex-direction:column;
+         padding-top:env(safe-area-inset-top);overflow:hidden}
+
+  /* ---------- header ---------- */
+  .hdr{display:flex;align-items:center;gap:10px;padding:11px 16px 7px;flex:none}
+  .brandmark{width:35px;height:35px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(152deg,#2C1013,#140A0C);border:1px solid rgba(255,59,71,.28);
+    color:#FF7078;box-shadow:0 9px 22px rgba(255,59,71,.10),inset 0 1px 0 rgba(255,255,255,.06)}
+  .brandmark .ic{width:19px;height:19px;stroke-width:1.8}
+  .brandtxt{display:flex;flex-direction:column;line-height:1.05;min-width:0}
+  .brandname{font-weight:700;font-size:15px;letter-spacing:-.01em}
+  .brandsub{font-size:10px;color:var(--dim2);letter-spacing:.15em;text-transform:uppercase;margin-top:2px;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:126px}
+  .statuspill{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--dim);
+    background:rgba(255,255,255,.04);border:1px solid var(--line);padding:6px 10px;border-radius:999px;
+    white-space:nowrap}
+  .pulse{width:6px;height:6px;border-radius:50%;background:var(--dim2);flex:none}
+  .statuspill.is-ok .pulse{background:var(--green);animation:beat 2.2s infinite}
+  .statuspill.is-warn .pulse{background:var(--amber);animation:beat 1.2s infinite}
+  .statuspill.is-err .pulse{background:var(--red)}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(46,213,115,.42)}70%{box-shadow:0 0 0 6px rgba(46,213,115,0)}100%{box-shadow:0 0 0 0 rgba(46,213,115,0)}}
+  .ghostbtn{width:35px;height:35px;border-radius:12px;display:grid;place-items:center;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim)}
+  .ghostbtn:active{background:var(--panel3);color:#fff}
+  .ghostbtn .ic{width:17px;height:17px}
+
+  /* ---------- screens ---------- */
+  .screen{flex:1;min-height:0;display:flex;flex-direction:column}
+  #screenConnect{align-items:center;overflow-y:auto;padding:4px 18px calc(22px + env(safe-area-inset-bottom));
+    scrollbar-width:none}
+  #screenConnect::-webkit-scrollbar{display:none}
+
+  /* ---------- onboarding ---------- */
+  .radar{position:relative;width:158px;height:158px;margin:12px 0 6px;display:grid;place-items:center;flex:none}
+  .radar .ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,59,71,.30);
+    animation:ripple 3.1s var(--ease) infinite}
+  .radar .r2{animation-delay:1.03s}
+  .radar .r3{animation-delay:2.06s}
+  .radar.quiet .ring{animation:none;opacity:.22}
+  @keyframes ripple{0%{transform:scale(.34);opacity:0}18%{opacity:.85}100%{transform:scale(1);opacity:0}}
+  .radar-core{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,#261116,#0D0A0C);border:1px solid rgba(255,59,71,.36);
+    color:#FF7078;box-shadow:0 22px 54px rgba(0,0,0,.55),0 0 42px rgba(255,59,71,.13)}
+  .h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:8px 0 5px;text-align:center}
+  .lede{font-size:12.5px;line-height:1.5;color:var(--dim);margin:0 0 14px;text-align:center;max-width:302px}
+  .h2{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);
+      margin:20px 2px 8px;font-weight:700}
+
+  .connectstatus{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:13px;
+    padding:10px 14px;margin:2px 0 12px;width:100%}
+  .spinner{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.14);
+    border-top-color:var(--red);animation:spin .8s linear infinite;flex:none}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .tvlist{width:100%;display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+  .tvcard{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:16px;width:100%;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    text-align:left;transition:transform .15s var(--ease),border-color .2s}
+  .tvcard:active{transform:scale(.985);border-color:rgba(255,59,71,.4)}
+  .tvicon{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;
+    background:#0C0F14;border:1px solid var(--line);color:var(--dim)}
+  .tvmeta{flex:1;min-width:0;display:flex;flex-direction:column}
+  .tvname{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tvip{font-size:11px;color:var(--dim2);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:2px}
+  .tvcard .go{color:var(--dim2);width:16px;height:16px}
+  .scanhint{font-size:11.5px;color:var(--dim2);text-align:center;min-height:16px;margin:2px 0 10px}
+
+  .scanrow{display:flex;gap:8px;width:100%}
+  .scanrow .btn{flex:1}
+  .manual{display:flex;gap:8px;width:100%;margin-top:8px}
+  .manual input{flex:1;min-width:0;height:46px;border-radius:14px;background:#0B0E13;border:1px solid var(--line);
+    color:var(--txt);padding:0 14px;font:600 14px ui-monospace,SFMono-Regular,Menlo,monospace;outline:none}
+  .manual input:focus{border-color:rgba(255,59,71,.45)}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:46px;padding:0 16px;
+    border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:600;
+    transition:transform .12s var(--ease),background .15s}
+  .btn .ic{width:17px;height:17px}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:linear-gradient(180deg,#FF4A54,#E31E2B);border-color:rgba(255,255,255,.16);
+    color:#fff;box-shadow:0 12px 26px rgba(227,30,43,.24),inset 0 1px 0 rgba(255,255,255,.18)}
+  .btn.danger{color:#FF7A80;border-color:rgba(255,59,71,.28);background:rgba(255,59,71,.08)}
+  .btn.flat{background:none;border-color:transparent;color:var(--dim)}
+  .btn:disabled{opacity:.45}
+
+  .errbox{width:100%;margin-top:10px;padding:13px 14px;border-radius:14px;
+    background:rgba(255,59,71,.07);border:1px solid rgba(255,59,71,.24)}
+  .errbox .top{display:flex;gap:8px;align-items:flex-start;color:#FF9AA0;font-size:12.5px;line-height:1.45}
+  .errbox .top .ic{width:16px;height:16px;margin-top:1px}
+  .errbox .help{margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--dim2)}
+
+  .note{display:flex;gap:9px;align-items:flex-start;padding:12px 13px;border-radius:14px;width:100%;
+    background:rgba(255,255,255,.025);border:1px solid var(--line);margin-top:14px}
+  .note .ic{width:16px;height:16px;color:var(--dim2);margin-top:1px}
+  .note p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim2)}
+
+  /* ---------- main ---------- */
+  #screenMain{padding:0}
+  .banner{flex:none;margin:0 16px 2px;padding:8px 12px;border-radius:11px;font-size:11.5px;color:#FFD08A;
+    background:rgba(255,176,32,.08);border:1px solid rgba(255,176,32,.22);display:flex;align-items:center;gap:8px}
+  .banner .spinner{border-top-color:var(--amber)}
+  .tab{flex:1;min-height:0;overflow-y:auto;padding:4px 16px 14px;width:100%;max-width:520px;
+    margin:0 auto;scrollbar-width:none}
+  .tab::-webkit-scrollbar{display:none}
+  #tab-remote{display:flex;flex-direction:column}
+  #tab-remote::before,#tab-remote::after{content:"";flex:1 1 0;min-height:0}
+
+  .devicechips{display:flex;gap:6px;padding:4px 0 8px;overflow-x:auto;scrollbar-width:none}
+  .devicechips::-webkit-scrollbar{display:none}
+  .chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:999px;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:11px;color:var(--dim);
+    white-space:nowrap;flex:none}
+  .chip .ic{width:13px;height:13px}
+  .chip.dim{color:var(--dim2)}
+
+  .padzone{display:grid;place-items:center;padding:2px 0 8px}
+  .pad{position:relative;width:min(71vw,282px);aspect-ratio:1;border-radius:50%;touch-action:none;
+    background:radial-gradient(circle at 34% 26%,#1E242E 0%,#12161D 43%,#0A0C10 80%);
+    border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 -20px 44px rgba(0,0,0,.55),0 26px 60px rgba(0,0,0,.55)}
+  .pad::before{content:"";position:absolute;inset:9px;border-radius:50%;border:1px solid rgba(255,255,255,.05)}
+  .pad::after{content:"";position:absolute;inset:44px;border-radius:50%;border:1px solid rgba(255,255,255,.035)}
+  .seg{position:absolute;width:33%;height:33%;display:grid;place-items:center;border-radius:50%;
+    color:#7C8595;pointer-events:none;transition:color .12s,background .12s,transform .12s}
+  .seg .ic{width:25px;height:25px;stroke-width:2.1}
+  .seg.up{top:1.5%;left:33.5%}
+  .seg.down{bottom:1.5%;left:33.5%}
+  .seg.left{left:1.5%;top:33.5%}
+  .seg.right{right:1.5%;top:33.5%}
+  .seg.on{color:#fff;background:radial-gradient(circle,rgba(255,59,71,.20),transparent 70%);transform:scale(1.06)}
+  .padok{position:absolute;inset:33.5%;border-radius:50%;display:grid;place-items:center;pointer-events:none;
+    font-weight:700;font-size:13px;letter-spacing:.12em;color:#FF8A90;text-indent:.12em;
+    background:radial-gradient(circle at 35% 30%,#2C1116,#150A0D 72%);
+    border:1px solid rgba(255,59,71,.33);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 26px rgba(255,59,71,.10);
+    transition:transform .1s var(--ease),box-shadow .2s,color .12s}
+  .padok.on{transform:scale(.93);color:#fff;box-shadow:inset 0 2px 10px rgba(0,0,0,.6),0 0 0 1px rgba(255,59,71,.42)}
+
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px}
+  .pill{height:52px;border-radius:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;font-size:10.5px;color:var(--dim);box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .pill .ic{width:19px;height:19px}
+  .pill:active{background:var(--panel3);color:#fff;transform:scale(.975)}
+
+  .volcard{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;border-radius:18px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+  .volmid{flex:1;min-width:0}
+  .volline{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+  .volline span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim2);font-weight:700}
+  .volline b{font-size:13px;font-variant-numeric:tabular-nums}
+  .track{height:5px;border-radius:99px;background:#20262F;overflow:hidden}
+  .track i{display:block;height:100%;width:0%;border-radius:99px;transition:width .16s var(--ease);
+    background:linear-gradient(90deg,var(--red),var(--red2));box-shadow:0 0 12px rgba(255,59,71,.35)}
+  .volbtns{display:flex;gap:6px}
+  .round{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#0D1015;
+    border:1px solid var(--line);color:var(--txt);font-size:18px;font-weight:600;touch-action:manipulation}
+  .round .ic{width:18px;height:18px}
+  .round:active{background:var(--panel3);transform:scale(.93)}
+  .round.muted{color:#FF7A80;border-color:rgba(255,59,71,.3)}
+
+  .powerrow{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;margin-top:10px}
+  .power{height:62px;padding:0 15px;border-radius:18px;display:flex;align-items:center;gap:8px;
+    background:linear-gradient(180deg,#2B0F13,#150A0C);border:1px solid rgba(255,59,71,.30);
+    color:#FF7A80;font-weight:700;font-size:12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 10px 24px rgba(255,59,71,.08)}
+  .power .ic{width:20px;height:20px}
+  .power:active{transform:scale(.97);color:#fff}
+  .keytile{height:62px;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;font-size:10.5px;color:var(--dim);background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line)}
+  .keytile .ic{width:19px;height:19px}
+  .keytile:active{background:var(--panel3);color:#fff;transform:scale(.975)}
+
+  .approw{display:flex;gap:7px;margin-top:10px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+  .approw::-webkit-scrollbar{display:none}
+  .appchip{display:flex;align-items:center;gap:7px;height:38px;padding:0 13px;border-radius:12px;flex:none;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);font-size:12px;color:var(--dim);
+    transition:background .15s,transform .12s}
+  .appchip .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .appchip:active{background:var(--panel3);color:#fff;transform:scale(.97)}
+
+  /* ---------- keys tab ---------- */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .kt{aspect-ratio:1/.99;border-radius:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;font-size:9.5px;color:var(--dim);text-align:center;padding:4px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+  .kt .ic{width:20px;height:20px}
+  .kt:active{background:var(--panel3);color:#fff;transform:scale(.96)}
+  .kt.rec{color:#FF7A80}
+
+  /* ---------- keyboard ---------- */
+  textarea{width:100%;border-radius:16px;background:#0B0E13;border:1px solid var(--line);color:var(--txt);
+    padding:14px;font:500 15px/1.45 inherit;outline:none;resize:none;min-height:98px}
+  textarea:focus{border-color:rgba(255,59,71,.40);box-shadow:0 0 0 3px rgba(255,59,71,.08)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+  .chips button{height:32px;padding:0 12px;border-radius:999px;background:rgba(255,255,255,.04);
+    border:1px solid var(--line);font-size:12px;color:var(--dim)}
+  .chips button:active{background:var(--panel3);color:#fff}
+
+  /* ---------- settings ---------- */
+  .card{border-radius:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);padding:4px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+  .kv{display:flex;justify-content:space-between;gap:14px;padding:11px 0;
+    border-bottom:1px solid rgba(255,255,255,.045);font-size:12.5px}
+  .kv:last-child{border-bottom:0}
+  .kv span{color:var(--dim2);flex:none}
+  .kv b{font-weight:600;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:64%}
+  .mono{font:500 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim2);
+    word-break:break-all;padding:0 0 11px}
+  .aboutrow{display:flex;gap:11px;align-items:flex-start;padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,.045)}
+  .aboutrow:last-child{border-bottom:0}
+  .aboutrow .ic{width:17px;height:17px;color:var(--dim2);margin-top:2px}
+  .aboutrow b{display:block;font-size:12.5px;font-weight:600}
+  .aboutrow span{display:block;font-size:11px;color:var(--dim2);margin-top:2px;line-height:1.4}
+  .settings .btn{width:100%;margin-top:10px}
+
+  /* ---------- tab bar ---------- */
+  .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;flex:none;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+    background:rgba(9,10,13,.88);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-top:1px solid var(--line);position:relative}
+  .tabs::before{content:"";position:absolute;top:-42px;left:0;right:0;height:42px;pointer-events:none;
+    background:linear-gradient(transparent,rgba(7,8,11,.7))}
+  .tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    height:50px;border-radius:13px;color:var(--dim2);font-size:9.5px;letter-spacing:.02em;font-weight:600}
+  .tabs button .ic{width:19px;height:19px;stroke-width:1.9}
+  .tabs button.on{color:#FF6B73;
+    background:radial-gradient(62% 74% at 50% 100%,rgba(255,59,71,.16),transparent 76%)}
+
+  /* ---------- hud / toast ---------- */
+  .hud{position:fixed;top:calc(62px + env(safe-area-inset-top));right:18px;z-index:30;pointer-events:none;
+    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:13px;
+    background:rgba(18,22,29,.94);border:1px solid var(--line2);backdrop-filter:blur(12px);
+    font-variant-numeric:tabular-nums;box-shadow:0 14px 30px rgba(0,0,0,.5);
+    opacity:0;transform:translateY(-6px);transition:.18s var(--ease)}
+  .hud.show{opacity:1;transform:none}
+  .hud .ic{width:16px;height:16px;color:var(--dim)}
+  .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;
+    transform:translate(-50%,10px);opacity:0;pointer-events:none;max-width:86vw;text-align:center;
+    background:rgba(24,28,36,.97);border:1px solid var(--line2);color:var(--txt);font-size:12.5px;
+    padding:11px 16px;border-radius:13px;transition:.2s var(--ease);box-shadow:0 16px 40px rgba(0,0,0,.5)}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-height:730px){
+    .pad{width:min(60vw,230px)}
+    .row3 .pill{height:46px}
+    .volcard{padding:8px 10px}
+    .powerrow .power,.powerrow .keytile{height:56px}
+    .radar{width:132px;height:132px;margin-top:4px}
+    .radar-core{width:64px;height:64px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+
+<!--ICONS-->
+
+<div class="shell">
+  <header class="hdr">
+    <div class="brandmark"><svg class="ic"><use href="#i-circle-dot"/></svg></div>
+    <div class="brandtxt">
+      <div class="brandname">Xstream</div>
+      <div class="brandsub" id="hdrSub">Remote</div>
+    </div>
+    <div class="statuspill" id="statusPill">
+      <span class="pulse"></span><span id="statusText">Offline</span>
+    </div>
+    <button class="ghostbtn" id="btnGoConnect" aria-label="Connection">
+      <svg class="ic"><use href="#i-wifi"/></svg>
+    </button>
+  </header>
+
+  <!-- ================= connect ================= -->
+  <section class="screen" id="screenConnect">
+    <div class="radar" id="radar">
+      <span class="ring"></span><span class="ring r2"></span><span class="ring r3"></span>
+      <div class="radar-core"><svg class="ic big"><use href="#i-tv"/></svg></div>
+    </div>
+    <h1 class="h1">Find your box</h1>
+    <p class="lede">Stay on the same Wi-Fi as the Xstream box. Discovery uses mDNS plus a quick port sweep.</p>
+
+    <div class="connectstatus" id="connectStatus" hidden>
+      <span class="spinner"></span><span id="connectStatusText">Connecting…</span>
+    </div>
+
+    <div class="tvlist" id="tvList"></div>
+    <div class="scanhint" id="scanHint">Scanning the network…</div>
+
+    <div class="errbox" id="errCard" hidden>
+      <div class="top"><svg class="ic"><use href="#i-alert-circle"/></svg><span id="errText"></span></div>
+      <div class="help" id="errHelp" hidden>
+        The box only accepts remotes it has paired with. Re-pair this client from the laptop bridge,
+        then rebuild the APK with the fresh <b>client.pem</b> and <b>client.key</b>.
+      </div>
+    </div>
+
+    <div class="scanrow">
+      <button class="btn primary" id="btnScan">
+        <svg class="ic"><use href="#i-scan-line"/></svg><span>Scan again</span>
+      </button>
+      <button class="btn" id="btnManual">
+        <svg class="ic"><use href="#i-plug"/></svg><span>Enter IP</span>
+      </button>
+    </div>
+
+    <form class="manual" id="manualForm" hidden>
+      <input id="manualIp" inputmode="decimal" placeholder="192.168.1.10"
+             autocomplete="off" spellcheck="false" autocapitalize="off">
+      <button class="btn primary" type="submit">Go</button>
+    </form>
+
+    <div class="note">
+      <svg class="ic"><use href="#i-shield-check"/></svg>
+      <p>Direct TLS to port 6466 with a paired client certificate. No cloud, no account, nothing leaves your LAN.</p>
+    </div>
+  </section>
+
+  <!-- ================= main ================= -->
+  <main class="screen" id="screenMain" hidden>
+    <div class="banner" id="banner" hidden>
+      <span class="spinner"></span><span id="bannerText">Reconnecting…</span>
+    </div>
+
+    <!-- remote -->
+    <section class="tab" id="tab-remote">
+      <div class="devicechips">
+        <span class="chip"><svg class="ic"><use href="#i-wifi"/></svg><span id="chipDeviceText">Xstream</span></span>
+        <span class="chip dim"><svg class="ic"><use href="#i-circle-play"/></svg><span id="chipAppText">—</span></span>
+        <span class="chip dim"><svg class="ic"><use href="#i-activity"/></svg><span id="chipRttText">—</span></span>
+      </div>
+
+      <div class="padzone">
+        <div class="pad" id="pad">
+          <span class="seg up" data-dir="UP"><svg class="ic"><use href="#i-chevron-up"/></svg></span>
+          <span class="seg down" data-dir="DOWN"><svg class="ic"><use href="#i-chevron-down"/></svg></span>
+          <span class="seg left" data-dir="LEFT"><svg class="ic"><use href="#i-chevron-left"/></svg></span>
+          <span class="seg right" data-dir="RIGHT"><svg class="ic"><use href="#i-chevron-right"/></svg></span>
+          <span class="padok" id="okBtn">OK</span>
+        </div>
+      </div>
+
+      <div class="row3">
+        <button class="pill" data-key="BACK"><svg class="ic"><use href="#i-arrow-left"/></svg><span>Back</span></button>
+        <button class="pill" data-key="HOME"><svg class="ic"><use href="#i-home"/></svg><span>Home</span></button>
+        <button class="pill" data-key="MENU"><svg class="ic"><use href="#i-menu"/></svg><span>Menu</span></button>
+      </div>
+
+      <div class="volcard">
+        <button class="round" id="btnMute" aria-label="Mute">
+          <svg class="ic" id="muteIcon"><use href="#i-volume-1"/></svg>
+        </button>
+        <div class="volmid">
+          <div class="volline"><span>Volume</span><b id="volNum">—</b></div>
+          <div class="track"><i id="volFill"></i></div>
+        </div>
+        <div class="volbtns">
+          <button class="round" data-key="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">−</button>
+          <button class="round" data-key="VOLUME_UP" data-repeat="1" aria-label="Volume up">+</button>
+        </div>
+      </div>
+
+      <div class="powerrow">
+        <button class="power" data-key="POWER"><svg class="ic"><use href="#i-power"/></svg><span>Power</span></button>
+        <button class="keytile" data-key="TV"><svg class="ic"><use href="#i-tv"/></svg><span>Live TV</span></button>
+        <button class="keytile" data-key="GUIDE"><svg class="ic"><use href="#i-list-video"/></svg><span>Guide</span></button>
+      </div>
+
+      <div class="approw" id="appRow"></div>
+    </section>
+
+    <!-- keys -->
+    <section class="tab" id="tab-keys" hidden>
+      <h2 class="h2" style="margin-top:10px">Every key</h2>
+      <div class="grid" id="keyGrid"></div>
+      <div class="note">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <p>This Airtel build treats several system keys as no-ops. Guide, Info and Settings may do nothing depending on what’s on screen.</p>
+      </div>
+    </section>
+
+    <!-- keyboard -->
+    <section class="tab" id="tab-keyboard" hidden>
+      <h2 class="h2" style="margin-top:10px">Type on the box</h2>
+      <p class="lede" style="text-align:left;max-width:none;margin-bottom:12px">
+        Focus a search or email field on the TV first, then send.
+      </p>
+      <textarea id="txtInput" rows="3" placeholder="Type here…" autocomplete="off"
+                autocapitalize="sentences" spellcheck="false"></textarea>
+      <div class="row2">
+        <button class="btn primary" id="btnSendText">
+          <svg class="ic"><use href="#i-corner-down-left"/></svg><span>Send text</span>
+        </button>
+        <button class="btn" id="btnClear">
+          <svg class="ic"><use href="#i-delete"/></svg><span>Clear</span>
+        </button>
+      </div>
+      <div class="chips" id="quickChips"></div>
+      <div class="note">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <p>The box accepts text only while its on-screen keyboard is open. If nothing lands, tap the TV’s search field and send again.</p>
+      </div>
+    </section>
+
+    <!-- settings -->
+    <section class="tab settings" id="tab-settings" hidden>
+      <h2 class="h2" style="margin-top:10px">This session</h2>
+      <div class="card">
+        <div class="kv"><span>Status</span><b id="setStatus">—</b></div>
+        <div class="kv"><span>Address</span><b id="setHost">—</b></div>
+        <div class="kv"><span>Box</span><b id="setModel">—</b></div>
+        <div class="kv"><span>Software</span><b id="setSw">—</b></div>
+        <div class="kv"><span>App</span><b id="setApp">—</b></div>
+        <div class="kv"><span>Round trip</span><b id="setRtt">—</b></div>
+      </div>
+      <div class="row2">
+        <button class="btn" id="btnReconnect">
+          <svg class="ic"><use href="#i-refresh-cw"/></svg><span>Reconnect</span>
+        </button>
+        <button class="btn danger" id="btnDisconnect">
+          <svg class="ic"><use href="#i-log-out"/></svg><span>Disconnect</span>
+        </button>
+      </div>
+
+      <h2 class="h2">Certificates</h2>
+      <div class="card">
+        <div class="kv"><span>Client</span><b>client.pem</b></div>
+        <div class="mono" id="setCertFp">—</div>
+        <div class="kv"><span>Box</span><b id="setPeerName">—</b></div>
+        <div class="mono" id="setPeerFp">—</div>
+      </div>
+
+      <h2 class="h2">About</h2>
+      <div class="card">
+        <div class="aboutrow">
+          <svg class="ic"><use href="#i-shield-check"/></svg>
+          <div><b>Android TV Remote v2</b><span>TLS + protobuf on 6466, direct on your LAN</span></div>
+        </div>
+        <div class="aboutrow">
+          <svg class="ic"><use href="#i-circle-dot"/></svg>
+          <div><b>Lucide icons</b><span>ISC licence · lucide.dev</span></div>
+        </div>
+        <div class="aboutrow">
+          <svg class="ic"><use href="#i-smartphone"/></svg>
+          <div><b>Xstream Remote 1.0</b><span>Standalone Java client · no cloud</span></div>
+        </div>
+      </div>
+
+      <button class="btn flat" id="btnForget">
+        <svg class="ic"><use href="#i-trash-2"/></svg><span>Forget this box</span>
+      </button>
+      <div style="height:8px"></div>
+    </section>
+
+    <nav class="tabs" id="tabs">
+      <button data-tab="remote" class="on"><svg class="ic"><use href="#i-gamepad-2"/></svg><span>Remote</span></button>
+      <button data-tab="keys"><svg class="ic"><use href="#i-layout-grid"/></svg><span>Keys</span></button>
+      <button data-tab="keyboard"><svg class="ic"><use href="#i-keyboard"/></svg><span>Keyboard</span></button>
+      <button data-tab="settings"><svg class="ic"><use href="#i-settings"/></svg><span>Settings</span></button>
+    </nav>
+  </main>
+</div>
+
+<div class="hud" id="volHud">
+  <svg class="ic" id="hudIcon"><use href="#i-volume-2"/></svg><b id="volHudNum">—</b>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var PREVIEW = location.search.indexOf('preview=') !== -1;
+  var PREVIEW_CONNECT = location.search.indexOf('preview=connect') !== -1;
+  var $ = function (sel, root) { return (root || document).querySelector(sel); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+  var state = {
+    status: 'idle', host: '', model: '', vendor: '', sw: '', app: '',
+    level: -1, max: -1, muted: false, rtt: 0, cert: '', peer: '', error: '', kind: ''
+  };
+
+  var currentTab = 'remote';
+  var seen = {};
+  var hudTimer = 0, toastTimer = 0, startedOnce = false;
+
+  /* ---------- native bridge ---------- */
+  var Native = window.Native || (PREVIEW ? mock() : null);
+
+  function mock() {
+    return {
+      savedHost: function () { return PREVIEW_CONNECT ? '' : '192.168.1.10'; },
+      scan: function () {
+        setTimeout(function () {
+          window.__tv({ type: 'scan', done: true, tvs: [
+            { ip: '192.168.1.10', name: 'Xstream Box', model: 'XstreamIPTV1-VT' }
+          ]});
+        }, 700);
+      },
+      connect: function (host) {
+        setTimeout(function () {
+          window.__tv({ type: 'state', status: 'connecting', host: host, error: '', error_kind: '' });
+        }, 150);
+        setTimeout(function () {
+          window.__tv({ type: 'state', status: 'connected', host: host,
+            model: 'XstreamIPTV1-VT', vendor: 'Vantiva', sw: '7.00.999235495',
+            app: 'com.airtel.tv', rtt: 38, cert: 'A0:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF',
+            peer: 'AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99',
+            volume: { level: 18, max: 25, muted: false }, error: '', error_kind: '' });
+        }, 950);
+      },
+      disconnect: function () {},
+      forget: function () {},
+      key: function (k) {
+        if (k === 'VOLUME_UP') bumpVolume(1);
+        if (k === 'VOLUME_DOWN') bumpVolume(-1);
+      },
+      text: function (t) { toast('Sent “' + t + '”'); },
+      launch: function (u) { toast('Launching ' + u); },
+      exit: function () {},
+      info: function () { return '{}'; }
+    };
+  }
+
+  var NEEDS_BRIDGE = !Native;
+  if (NEEDS_BRIDGE) {
+    document.getElementById('screenConnect').innerHTML =
+      '<div class="errbox" style="margin-top:40px"><div class="top">' +
+      '<svg class="ic"><use href="#i-alert-circle"/></svg>' +
+      '<span>The native bridge did not load. Reinstall the APK.</span></div></div>';
+    return;
+  }
+
+  /* ---------- helpers ---------- */
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function buzz(ms) {
+    try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+  }
+
+  function toast(message) {
+    var el = $('#toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('show'); }, 2100);
+  }
+
+  function icon(name) { return '<svg class="ic"><use href="#i-' + name + '"/></svg>'; }
+
+  var APP_NAMES = {
+    'com.airtel.tv': 'Xstream',
+    'com.google.android.youtube.tv': 'YouTube',
+    'com.google.android.youtube': 'YouTube',
+    'com.netflix.ninja': 'Netflix',
+    'com.amazon.amazonvideo.livingroom': 'Prime Video',
+    'in.startv.hotstar': 'Hotstar',
+    'com.spotify.tv.android': 'Spotify',
+    'com.android.vending': 'Play Store',
+    'com.internet.tvbrowser': 'Browser',
+    'com.google.android.tvlauncher': 'Home',
+    'com.android.tv.settings': 'Settings',
+    'com.google.android.apps.tv.launcherx': 'Home'
+  };
+
+  function appName(pkg) {
+    if (!pkg) return '—';
+    return APP_NAMES[pkg] || pkg.split('.').pop();
+  }
+
+  /* ---------- screens ---------- */
+  function showConnect() {
+    $('#screenConnect').hidden = false;
+    $('#screenMain').hidden = true;
+  }
+
+  function showMain() {
+    $('#screenConnect').hidden = true;
+    $('#screenMain').hidden = false;
+  }
+
+  function setTab(name) {
+    currentTab = name;
+    $$('.tab').forEach(function (tab) {
+      tab.hidden = tab.id !== 'tab-' + name;
+    });
+    $$('#tabs button').forEach(function (btn) {
+      btn.classList.toggle('on', btn.dataset.tab === name);
+    });
+    if (name === 'settings') renderSettings();
+  }
+
+  /* ---------- state ---------- */
+  function renderState() {
+    var connected = state.status === 'connected';
+    var pill = $('#statusPill');
+    pill.className = 'statuspill ' +
+      (connected ? 'is-ok' : (state.status === 'connecting' || state.status === 'reconnecting' ? 'is-warn' : 'is-err'));
+    $('#statusText').textContent = connected ? 'Connected'
+      : state.status === 'connecting' ? 'Connecting'
+      : state.status === 'reconnecting' ? 'Reconnecting'
+      : state.status === 'error' ? 'Offline' : 'Offline';
+    $('#hdrSub').textContent = connected ? (state.model || 'Remote') : 'Remote';
+
+    if (connected) {
+      startedOnce = true;
+      showMain();
+      $('#banner').hidden = true;
+      $('#connectStatus').hidden = true;
+      $('#errCard').hidden = true;
+      $('#chipDeviceText').textContent = state.host || state.model || 'Xstream';
+      $('#chipRttText').textContent = state.rtt ? state.rtt + ' ms' : '—';
+      $('#chipAppText').textContent = appName(state.app);
+      document.title = (state.model || 'Xstream') + ' · Remote';
+      renderVolume();
+      renderSettings();
+      return;
+    }
+
+    if (state.status === 'connecting') {
+      showConnect();
+      $('#connectStatus').hidden = false;
+      $('#connectStatusText').textContent = 'Connecting to ' + state.host + '…';
+      $('#errCard').hidden = true;
+      return;
+    }
+
+    if (state.status === 'reconnecting') {
+      if (startedOnce) {
+        showMain();
+        $('#banner').hidden = false;
+        $('#bannerText').textContent = 'Reconnecting to ' + state.host + '…';
+      } else {
+        showConnect();
+        $('#connectStatus').hidden = false;
+        $('#connectStatusText').textContent = 'Reconnecting to ' + state.host + '…';
+      }
+      return;
+    }
+
+    if (state.status === 'error') {
+      showConnect();
+      $('#connectStatus').hidden = true;
+      $('#banner').hidden = true;
+      $('#errCard').hidden = false;
+      $('#errText').textContent = state.error || 'Could not reach the box.';
+      $('#errHelp').hidden = state.kind !== 'auth' && state.kind !== 'dropped';
+    }
+  }
+
+  function renderVolume() {
+    if (state.level < 0 || state.max <= 0) {
+      $('#volNum').textContent = '—';
+      $('#volFill').style.width = '0%';
+      return;
+    }
+    var pct = Math.max(0, Math.min(100, Math.round(state.level / state.max * 100)));
+    $('#volNum').textContent = state.muted ? 'Muted' : state.level;
+    $('#volFill').style.width = pct + '%';
+    $('#btnMute').classList.toggle('muted', state.muted);
+    $('#muteIcon').innerHTML = '<use href="#i-' + (state.muted ? 'volume-x' : state.level === 0 ? 'volume-off' : state.level < 8 ? 'volume-1' : 'volume-2') + '"/>';
+  }
+
+  function renderSettings() {
+    $('#setStatus').textContent = state.status === 'connected' ? 'Connected' :
+      state.status === 'reconnecting' ? 'Reconnecting' : state.status === 'connecting' ? 'Connecting' :
+      state.status === 'error' ? 'Offline' : 'Idle';
+    $('#setHost').textContent = state.host || '—';
+    $('#setModel').textContent = state.model ? (state.vendor ? state.vendor + ' ' + state.model : state.model) : '—';
+    $('#setSw').textContent = state.sw || '—';
+    $('#setApp').textContent = appName(state.app);
+    $('#setRtt').textContent = state.rtt ? state.rtt + ' ms' : '—';
+    $('#setCertFp').textContent = state.cert || '—';
+    $('#setPeerName').textContent = state.model || '—';
+    $('#setPeerFp').textContent = state.peer || '—';
+  }
+
+  function onState(ev) {
+    state.status = ev.status || state.status;
+    if ('host' in ev) state.host = ev.host || state.host;
+    if ('model' in ev) state.model = ev.model || '';
+    if ('vendor' in ev) state.vendor = ev.vendor || '';
+    if ('sw' in ev) state.sw = ev.sw || '';
+    if ('app' in ev) state.app = ev.app || '';
+    if ('rtt' in ev) state.rtt = ev.rtt || 0;
+    if ('cert' in ev) state.cert = ev.cert || '';
+    if ('peer' in ev) state.peer = ev.peer || '';
+    if ('error' in ev) state.error = ev.error || '';
+    if ('error_kind' in ev) state.kind = ev.error_kind || '';
+    if (ev.volume) applyVolume(ev.volume.level, ev.volume.max, ev.volume.muted);
+    renderState();
+  }
+
+  function applyVolume(level, max, muted) {
+    state.level = level;
+    state.max = max;
+    state.muted = !!muted;
+    renderVolume();
+  }
+
+  function bumpVolume(delta) {
+    if (state.level < 0) return;
+    var next = Math.max(0, Math.min(state.max, state.level + delta));
+    state.level = next;
+    state.muted = false;
+    renderVolume();
+    showHud(next, false);
+  }
+
+  function showHud(level, muted) {
+    var hud = $('#volHud');
+    $('#volHudNum').textContent = muted ? 'Mute' : level;
+    $('#hudIcon').innerHTML = '<use href="#i-' + (muted ? 'volume-x' : level === 0 ? 'volume-off' : level < 8 ? 'volume-1' : 'volume-2') + '"/>';
+    hud.classList.add('show');
+    clearTimeout(hudTimer);
+    hudTimer = setTimeout(function () { hud.classList.remove('show'); }, 1400);
+  }
+
+  /* ---------- key handling ---------- */
+  function press(key, origin) {
+    if (currentTab === 'remote' || currentTab === 'keys') buzz(7);
+    if (key === 'VOLUME_UP') bumpVolume(1);
+    if (key === 'VOLUME_DOWN') bumpVolume(-1);
+    try { Native.key(key); } catch (e) { toast(String(e)); }
+    if (origin) {
+      origin.classList.add('flash');
+      setTimeout(function () { origin.classList.remove('flash'); }, 120);
+    }
+  }
+
+  function bindPress(el, key, repeat) {
+    var hold = 0, timer = 0;
+
+    function down(ev) {
+      ev.preventDefault();
+      try { el.setPointerCapture(ev.pointerId); } catch (e) {}
+      press(key, el);
+      if (repeat) {
+        hold = setTimeout(function () {
+          timer = setInterval(function () { press(key, el); }, 115);
+        }, 430);
+      }
+    }
+
+    function up() {
+      clearTimeout(hold);
+      clearInterval(timer);
+      hold = timer = 0;
+    }
+
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    el.addEventListener('lostpointercapture', up);
+  }
+
+  $$('[data-key]').forEach(function (el) { bindPress(el, el.dataset.key, el.dataset.repeat === '1'); });
+
+  /* d-pad: tap a ring segment = that direction, tap centre = OK, swipe = direction */
+  (function () {
+    var pad = $('#pad');
+    var active = null;
+    var start = null;
+    var fired = false;
+
+    function hitTest(x, y) {
+      var box = pad.getBoundingClientRect();
+      var dx = x - (box.left + box.width / 2);
+      var dy = y - (box.top + box.height / 2);
+      var reach = Math.sqrt(dx * dx + dy * dy) / (box.width / 2);
+      if (reach < 0.31) return 'CENTER';
+      var angle = Math.atan2(dy, dx) * 180 / Math.PI;
+      if (angle > -45 && angle <= 45) return 'RIGHT';
+      if (angle > 45 && angle <= 135) return 'DOWN';
+      if (angle > 135 || angle <= -135) return 'LEFT';
+      return 'UP';
+    }
+
+    function mark(dir) {
+      if (active) active.classList.remove('on');
+      active = dir === 'CENTER' ? $('#okBtn') : pad.querySelector('.seg[data-dir="' + dir + '"]');
+      if (active) active.classList.add('on');
+    }
+
+    function fire(dir) {
+      mark(dir);
+      buzz(7);
+      if (dir === 'CENTER') {
+        Native.key('CENTER');
+      } else {
+        Native.key(dir);
+      }
+      setTimeout(function () {
+        if (active) active.classList.remove('on');
+        active = null;
+      }, 130);
+    }
+
+    pad.addEventListener('pointerdown', function (ev) {
+      ev.preventDefault();
+      start = { x: ev.clientX, y: ev.clientY };
+      fired = false;
+      try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
+      mark(hitTest(ev.clientX, ev.clientY));
+    });
+
+    pad.addEventListener('pointermove', function (ev) {
+      if (!start || fired) return;
+      var dx = ev.clientX - start.x;
+      var dy = ev.clientY - start.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 24) return;
+      fired = true;
+      if (Math.abs(dx) > Math.abs(dy)) fire(dx > 0 ? 'RIGHT' : 'LEFT');
+      else fire(dy > 0 ? 'DOWN' : 'UP');
+    });
+
+    pad.addEventListener('pointerup', function (ev) {
+      if (!start) return;
+      var dir = hitTest(ev.clientX, ev.clientY);
+      if (!fired) fire(dir);
+      start = null;
+      fired = false;
+      if (active) active.classList.remove('on');
+      active = null;
+    });
+
+    pad.addEventListener('pointercancel', function () {
+      start = null;
+      fired = false;
+      if (active) active.classList.remove('on');
+      active = null;
+    });
+  })();
+
+  $('#btnMute').addEventListener('pointerdown', function (ev) {
+    ev.preventDefault();
+    Native.key('MUTE');
+    buzz(7);
+    state.muted = !state.muted;
+    renderVolume();
+    showHud(state.level, state.muted);
+  });
+
+  /* ---------- tabs ---------- */
+  $$('#tabs button').forEach(function (btn) {
+    btn.addEventListener('click', function () { setTab(btn.dataset.tab); });
+  });
+
+  /* ---------- keys tab ---------- */
+  var KEY_TILES = [
+    ['POWER', 'Power', 'power', 1], ['MUTE', 'Mute', 'volume-x'],
+    ['GUIDE', 'Guide', 'list-video'], ['INFO', 'Info', 'info'],
+    ['TV', 'Live TV', 'tv'], ['TV_INPUT', 'Input', 'plug'],
+    ['CHANNEL_UP', 'CH +', 'plus'], ['CHANNEL_DOWN', 'CH −', 'minus'],
+    ['PLAY_PAUSE', 'Play/Pause', 'play'], ['REWIND', 'Rewind', 'rewind'],
+    ['FAST_FORWARD', 'Forward', 'fast-forward'], ['STOP', 'Stop', 'square'],
+    ['PREVIOUS', 'Previous', 'skip-back'], ['NEXT', 'Next', 'skip-forward'],
+    ['CAPTIONS', 'Captions', 'subtitles'], ['SEARCH', 'Search', 'search'],
+    ['SETTINGS', 'Settings', 'settings'], ['APP_SWITCH', 'Apps', 'layout-grid'],
+    ['SLEEP', 'Sleep', 'power-off'], ['WAKEUP', 'Wake', 'sun']
+  ];
+
+  var grid = $('#keyGrid');
+  KEY_TILES.forEach(function (item) {
+    var el = document.createElement('button');
+    el.className = 'kt' + (item[3] ? ' rec' : '');
+    el.innerHTML = icon(item[2]) + '<span>' + esc(item[1]) + '</span>';
+    bindPress(el, item[0], item[0] === 'CHANNEL_UP' || item[0] === 'CHANNEL_DOWN');
+    grid.appendChild(el);
+  });
+
+  /* ---------- app shortcuts ---------- */
+  var APP_SHORTCUTS = [
+    ['YouTube', '#FF4438', 'https://www.youtube.com'],
+    ['Netflix', '#E50914', 'https://www.netflix.com'],
+    ['Hotstar', '#2AA7E8', 'https://www.hotstar.com'],
+    ['Play Store', '#34C759', 'market://details?id=com.android.vending']
+  ];
+
+  var apps = $('#appRow');
+  APP_SHORTCUTS.forEach(function (item) {
+    var el = document.createElement('button');
+    el.className = 'appchip';
+    el.innerHTML = '<span class="dot" style="background:' + item[1] + '"></span><span>' + esc(item[0]) + '</span>';
+    el.addEventListener('click', function () {
+      buzz(8);
+      try { Native.launch(item[2]); toast('Opening ' + item[0]); }
+      catch (e) { toast(String(e)); }
+    });
+    apps.appendChild(el);
+  });
+
+  /* ---------- keyboard ---------- */
+  var QUICK = ['youtube', 'netflix', 'hotstar', 'live cricket', 'news', 'malayalam'];
+
+  var chips = $('#quickChips');
+  QUICK.forEach(function (word) {
+    var el = document.createElement('button');
+    el.textContent = word;
+    el.addEventListener('click', function () {
+      var input = $('#txtInput');
+      input.value = word;
+      input.focus();
+      buzz(6);
+    });
+    chips.appendChild(el);
+  });
+
+  $('#btnSendText').addEventListener('click', function () {
+    var text = $('#txtInput').value;
+    if (!text) { toast('Type something first'); return; }
+    try {
+      Native.text(text);
+      toast('Sent');
+      buzz(12);
+    } catch (e) { toast(String(e)); }
+    $('#txtInput').value = '';
+  });
+
+  $('#btnClear').addEventListener('click', function () {
+    $('#txtInput').value = '';
+    $('#txtInput').focus();
+  });
+
+  /* ---------- connect ---------- */
+  function scan() {
+    seen = {};
+    $('#tvList').innerHTML = '';
+    $('#scanHint').textContent = 'Scanning the network…';
+    $('#radar').classList.remove('quiet');
+    $('#errCard').hidden = true;
+    try { Native.scan(); } catch (e) { toast(String(e)); }
+  }
+
+  function startConnect(ip) {
+    if (!ip) return;
+    state.host = ip;
+    $('#manualForm').hidden = true;
+    $('#errCard').hidden = true;
+    $('#radar').classList.add('quiet');
+    $('#connectStatus').hidden = false;
+    $('#connectStatusText').textContent = 'Connecting to ' + ip + '…';
+    showConnect();
+    buzz(10);
+    try { Native.connect(ip); } catch (e) { toast(String(e)); }
+  }
+
+  $('#btnScan').addEventListener('click', scan);
+
+  $('#btnManual').addEventListener('click', function () {
+    var form = $('#manualForm');
+    form.hidden = !form.hidden;
+    if (!form.hidden) $('#manualIp').focus();
+  });
+
+  $('#manualForm').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var ip = $('#manualIp').value.trim();
+    if (!ip) return;
+    startConnect(ip);
+  });
+
+  $('#btnGoConnect').addEventListener('click', function () {
+    if (state.status === 'connected') {
+      setTab('settings');
+      showMain();
+    } else {
+      showConnect();
+      scan();
+    }
+  });
+
+  $('#btnReconnect').addEventListener('click', function () {
+    if (!state.host) { toast('No box selected'); return; }
+    startConnect(state.host);
+  });
+
+  $('#btnDisconnect').addEventListener('click', function () {
+    try { Native.disconnect(); } catch (e) {}
+    toast('Disconnected');
+  });
+
+  $('#btnForget').addEventListener('click', function () {
+    try { Native.forget(); } catch (e) {}
+    state.status = 'idle';
+    state.host = '';
+    state.model = '';
+    state.sw = '';
+    state.app = '';
+    state.level = -1;
+    startedOnce = false;
+    showConnect();
+    scan();
+  });
+
+  /* ---------- scan results ---------- */
+  function onScan(ev) {
+    if (ev.tvs && ev.tvs.length) {
+      ev.tvs.forEach(function (tv) {
+        if (!tv.ip || seen[tv.ip]) return;
+        seen[tv.ip] = true;
+
+        var card = document.createElement('button');
+        card.className = 'tvcard';
+        card.innerHTML =
+          '<span class="tvicon">' + icon('tv') + '</span>' +
+          '<span class="tvmeta"><span class="tvname">' + esc(tv.name || 'Android TV') + '</span>' +
+          '<span class="tvip">' + esc(tv.ip) + (tv.model ? ' · ' + esc(tv.model) : '') + '</span></span>' +
+          '<svg class="ic go"><use href="#i-chevron-right"/></svg>';
+        card.addEventListener('click', function () { startConnect(tv.ip); });
+        $('#tvList').appendChild(card);
+      });
+    }
+
+    if (ev.done) {
+      $('#radar').classList.add('quiet');
+      var count = Object.keys(seen).length;
+      $('#scanHint').textContent = count
+        ? count + (count === 1 ? ' box found' : ' boxes found')
+        : 'Nothing found yet — check the Wi-Fi or enter the IP.';
+    } else if (!Object.keys(seen).length) {
+      $('#scanHint').textContent = 'Scanning the network…';
+    }
+  }
+
+  /* ---------- native events ---------- */
+  window.__tv = function (ev) {
+    if (!ev || !ev.type) return;
+    if (ev.type === 'state') onState(ev);
+    else if (ev.type === 'scan') onScan(ev);
+    else if (ev.type === 'volume') {
+      var before = state.level;
+      applyVolume(ev.level, ev.max, ev.muted);
+      if (before !== state.level) showHud(ev.level, ev.muted);
+    }
+    else if (ev.type === 'app') { state.app = ev.app || ''; $('#chipAppText').textContent = appName(state.app); renderSettings(); }
+    else if (ev.type === 'toast') toast(ev.msg || '');
+  };
+
+  window.__back = function () {
+    if (!$('#screenMain').hidden) {
+      if (currentTab !== 'remote') { setTab('remote'); return; }
+      try { Native.exit(); } catch (e) {}
+      return;
+    }
+    if (state.status === 'connected') { showMain(); return; }
+    try { Native.exit(); } catch (e) {}
+  };
+
+  /* ---------- boot ---------- */
+  var tabParam = (location.search.match(/[?&]tab=([a-z]+)/) || [])[1];
+  if (tabParam && document.getElementById('tab-' + tabParam)) setTab(tabParam);
+  else setTab('remote');
+  renderState();
+
+  var saved = '';
+  try { saved = Native.savedHost() || ''; } catch (e) {}
+  if (saved) {
+    startConnect(saved);
+  } else {
+    showConnect();
+    scan();
+  }
+})();
+</script>
+</body>
+</html>

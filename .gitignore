@@ -1,0 +1,39 @@
+# Local pairing material — never commit
+apk/assets/client.pem
+apk/assets/client.key
+apk/keystore.jks
+apk/build.local.ps1
+remote/certs/
+remote/pairs.json
+
+# Build artifacts
+apk/build/
+apk/*.apk
+apk/*.idsig
+XstreamRemote*.apk
+*.apk
+*.apk.idsig
+
+# Local captures and vendor research
+*.pcap
+dns_log.csv
+dns_logger.py
+airtel-xstream-laptop-research.md
+CHANNELS_ON_LAPTOP.md
+DEVICE_REPORT.md
+FEASIBILITY.md
+IMPLEMENTATION_PLAN.md
+LIVE_LAN_RE.md
+APK_INSTALL.md
+TvLauncher/
+
+# Python caches / virtualenvs
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

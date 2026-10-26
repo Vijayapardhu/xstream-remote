@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- d-pad ring -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,54 A22,22 0 1,1 76,54 A22,22 0 1,1 32,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="6.4" />
+
+    <!-- centre dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M49,54 A5,5 0 1,1 59,54 A5,5 0 1,1 49,54" />
+</vector>

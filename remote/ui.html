@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
+<meta name="theme-color" content="#08090b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Airtel Remote</title>
+<style>
+  :root{
+    --bg:#08090b; --panel:#111419; --panel2:#171b21; --line:#242a33;
+    --txt:#e9eef6; --dim:#8b95a5; --accent:#e4002b; --ok:#31d07a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--txt);
+    font:500 15px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    touch-action:manipulation; overscroll-behavior:none;
+    display:flex; flex-direction:column;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  }
+  header{
+    display:flex; align-items:center; gap:10px;
+    padding:12px 16px 10px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#0d1015,#08090b);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;background:#5a6474;flex:none}
+  .dot.on{background:var(--ok); box-shadow:0 0 10px rgba(49,208,122,.6)}
+  .dot.warn{background:#f0a020}
+  .who{min-width:0;flex:1}
+  .who b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .who span{display:block;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .vol{font-variant-numeric:tabular-nums;font-size:12px;color:var(--dim)}
+  .vol b{color:var(--txt);font-size:14px}
+
+  main{flex:1;overflow-y:auto;padding:14px 16px 96px}
+  .tab{display:none}
+  .tab.active{display:block}
+
+  .pad{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+    width:min(100%,290px);margin:4px auto 0;aspect-ratio:1;
+  }
+  button{
+    font:inherit;color:var(--txt);background:var(--panel);border:1px solid var(--line);
+    border-radius:16px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;transition:transform .06s,background .12s,border-color .12s;
+    padding:0;
+  }
+  button:active,.pressed{background:var(--panel2);border-color:#39424f;transform:scale(.96)}
+  .pad button{font-size:22px;border-radius:20px}
+  .pad .ok{
+    background:var(--panel2);font-size:15px;font-weight:700;letter-spacing:.06em;
+    border-color:#333c48;
+  }
+  .pad .ok:active{background:var(--accent);border-color:var(--accent)}
+  .pad .t{font-size:11px;color:var(--dim);letter-spacing:.05em}
+  .ghost{background:transparent;border-color:transparent}
+
+  .row{display:grid;gap:10px;margin-top:12px}
+  .row.three{grid-template-columns:repeat(3,1fr)}
+  .row.four{grid-template-columns:repeat(4,1fr)}
+  .row.two{grid-template-columns:1fr 1fr}
+  .row button{height:52px;font-size:13px;font-weight:600;gap:6px}
+  .row button small{display:block;font-size:10px;color:var(--dim);font-weight:500}
+  .icon{height:56px;font-size:20px}
+
+  .volbar{display:flex;align-items:center;gap:10px;margin-top:14px}
+  .volbar button{width:56px;height:56px;font-size:22px;border-radius:50%;flex:none}
+  .track{flex:1;height:8px;border-radius:99px;background:#1b2027;overflow:hidden}
+  .track i{display:block;height:100%;background:var(--txt);border-radius:99px;transition:width .18s}
+
+  h4{margin:22px 0 8px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);font-weight:600}
+  .field{display:flex;gap:8px}
+  .field input{
+    flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    color:var(--txt);font:inherit;padding:13px 14px;outline:none;min-width:0;
+  }
+  .field input:focus{border-color:#3d4756}
+  .field button{width:58px;flex:none;font-size:18px}
+
+  .tvlist{display:flex;flex-direction:column;gap:8px}
+  .tv{
+    display:flex;align-items:center;gap:12px;text-align:left;width:100%;
+    padding:14px;border-radius:14px;background:var(--panel);border:1px solid var(--line);
+  }
+  .tv .meta{flex:1;min-width:0}
+  .tv .meta b{display:block;font-size:14px}
+  .tv .meta span{display:block;font-size:11px;color:var(--dim)}
+  .tv.sel{border-color:var(--accent)}
+  .badge{font-size:10px;padding:3px 7px;border-radius:99px;background:#1d242d;color:var(--dim)}
+  .badge.ok{background:rgba(49,208,122,.12);color:var(--ok)}
+
+  .note{font-size:12px;color:var(--dim);line-height:1.5;margin:10px 0 0}
+  .banner{
+    display:none;margin-bottom:12px;padding:12px 14px;border-radius:12px;
+    background:rgba(240,160,32,.10);border:1px solid rgba(240,160,32,.3);
+    color:#f6c46b;font-size:12.5px;
+  }
+  .banner.show{display:block}
+
+  nav{
+    position:fixed;left:0;right:0;bottom:0;display:flex;
+    background:#0b0e12;border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  nav button{
+    flex:1;background:transparent;border:0;border-radius:0;height:58px;
+    flex-direction:column;gap:3px;font-size:10px;color:var(--dim);
+  }
+  nav button .g{font-size:18px;line-height:1}
+  nav button.on{color:var(--txt)}
+  nav button.on .g{color:var(--accent)}
+
+  .toast{
+    position:fixed;left:50%;bottom:78px;transform:translate(-50%,20px);
+    background:#242a33;color:var(--txt);padding:10px 16px;border-radius:99px;
+    font-size:12.5px;opacity:0;pointer-events:none;transition:.22s;max-width:86vw;text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+
+  .modal{
+    position:fixed;inset:0;background:rgba(0,0,0,.62);backdrop-filter:blur(3px);
+    display:none;align-items:flex-end;z-index:20;
+  }
+  .modal.show{display:flex}
+  .sheet{
+    width:100%;background:#0f1216;border:1px solid var(--line);border-bottom:0;
+    border-radius:22px 22px 0 0;padding:20px 18px calc(22px + env(safe-area-inset-bottom));
+    animation:up .22s ease-out;
+  }
+  @keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+  .sheet h3{margin:0 0 4px;font-size:16px}
+  .grab{width:42px;height:4px;border-radius:99px;background:#2b323c;margin:0 auto 14px}
+  .codebox{
+    font:700 26px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.28em;
+    text-align:center;text-transform:uppercase;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="dot" id="dot"></div>
+  <div class="who">
+    <b id="devname">No TV</b>
+    <span id="devinfo">tap Scan to find your box</span>
+  </div>
+  <div class="vol"><b id="volnum">–</b></div>
+</header>
+
+<main>
+  <div class="banner" id="banner">Not connected. Open the <b>Scan</b> tab and pick your TV.</div>
+
+  <section class="tab active" id="tab-remote">
+    <div class="pad">
+      <button class="ghost" data-key=""></button>
+      <button data-key="DPAD_UP" aria-label="up">▲</button>
+      <button class="ghost" data-key=""></button>
+      <button data-key="DPAD_LEFT" aria-label="left">◀</button>
+      <button class="ok" data-key="DPAD_CENTER">OK</button>
+      <button data-key="DPAD_RIGHT" aria-label="right">▶</button>
+      <button class="ghost" data-key=""></button>
+      <button data-key="DPAD_DOWN" aria-label="down">▼</button>
+      <button class="ghost" data-key=""></button>
+    </div>
+
+    <div class="row three">
+      <button data-key="BACK">‹ Back</button>
+      <button data-key="HOME">Home</button>
+      <button data-key="MENU">Menu</button>
+    </div>
+
+    <div class="volbar">
+      <button data-key="VOLUME_DOWN" aria-label="volume down">–</button>
+      <div class="track"><i id="volfill" style="width:0%"></i></div>
+      <button data-key="VOLUME_UP" aria-label="volume up">+</button>
+    </div>
+
+    <div class="row four" style="margin-top:10px">
+      <button data-key="VOLUME_MUTE">Mute</button>
+      <button data-key="POWER">Power</button>
+      <button data-key="TV">Live TV</button>
+      <button data-key="GUIDE">Guide</button>
+    </div>
+
+    <h4>Playback</h4>
+    <div class="row four">
+      <button data-key="MEDIA_PREVIOUS">⏮</button>
+      <button data-key="MEDIA_REWIND">⏪</button>
+      <button data-key="MEDIA_PLAY_PAUSE">⏯</button>
+      <button data-key="MEDIA_FAST_FORWARD">⏩</button>
+    </div>
+    <div class="row two" style="margin-top:10px">
+      <button data-key="MEDIA_NEXT">⏭ Next</button>
+      <button data-key="INFO">Info</button>
+    </div>
+
+    <h4>Shortcuts</h4>
+    <div class="tvlist" id="shortcuts"></div>
+  </section>
+
+  <section class="tab" id="tab-keys">
+    <h4>Type to the TV</h4>
+    <div class="field">
+      <input id="txt" placeholder="Search, passwords, URLs…" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button id="send" aria-label="send">↵</button>
+    </div>
+    <p class="note">Sends characters into whatever text field has focus on the TV. Use the D-pad to focus a search box first. <b>↵</b> types the text without pressing Enter on the TV; the button below does both.</p>
+    <div class="row two">
+      <button id="sendEnter">Send + Enter</button>
+      <button data-key="DEL">⌫ Backspace</button>
+    </div>
+    <h4>Digits</h4>
+    <div class="row four" id="digits"></div>
+  </section>
+
+  <section class="tab" id="tab-scan">
+    <h4>TVs on this network</h4>
+    <div class="row two">
+      <button id="scanBtn">Scan LAN</button>
+      <button id="rescanQuick">Reconnect</button>
+    </div>
+    <div class="tvlist" id="tvlist" style="margin-top:12px"></div>
+    <p class="note">
+      Discovery uses mDNS (<code>_androidtvremote2._tcp</code>) and a quick sweep for port 6466.
+      The box must be on the same network as this laptop.
+    </p>
+  </section>
+</main>
+
+<nav>
+  <button class="on" data-tab="remote"><span class="g">◉</span>Remote</button>
+  <button data-tab="keys"><span class="g">⌨</span>Keyboard</button>
+  <button data-tab="scan"><span class="g">⌕</span>Scan</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="pairModal">
+  <div class="sheet">
+    <div class="grab"></div>
+    <h3>Pair with the TV</h3>
+    <p class="note" id="pairNote">Tap <b>Show code on TV</b>. The box displays a 6-character code — type it here.</p>
+    <div class="field" style="margin-top:12px">
+      <input id="pairCode" class="codebox" placeholder="ABC123" maxlength="8"
+             autocapitalize="characters" autocomplete="off" spellcheck="false" inputmode="text">
+      <button id="pairGo" aria-label="submit code">↵</button>
+    </div>
+    <div class="row two" style="margin-top:10px">
+      <button id="pairStart">Show code on TV</button>
+      <button id="pairClose">Cancel</button>
+    </div>
+    <p class="note">
+      Pairing adds this laptop as a trusted remote client. To undo it, open
+      <b>Settings → Remotes &amp; accessories</b> on the box and remove the entry.
+    </p>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+let connected = false, lastVol = null;
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function api(path, body){
+  const opt = body === undefined ? {} : {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  };
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+
+function buzz(ms){ if (navigator.vibrate) navigator.vibrate(ms); }
+
+/* ---------- keys ---------- */
+async function sendKey(k){
+  if (!k) return;
+  try { await api('/api/key', {key: k}); }
+  catch (e) { toast(e.message); }
+}
+
+$$('[data-key]').forEach(b => {
+  const k = b.dataset.key;
+  if (!k) return;
+  let hold, rep;
+  const start = e => {
+    e.preventDefault();
+    b.classList.add('pressed');
+    buzz(8);
+    sendKey(k);
+    hold = setTimeout(() => {
+      rep = setInterval(() => sendKey(k), 110);
+    }, 450);
+  };
+  const stop = () => {
+    b.classList.remove('pressed');
+    clearTimeout(hold);
+    clearInterval(rep);
+    hold = rep = null;
+  };
+  b.addEventListener('pointerdown', start);
+  b.addEventListener('pointerup', stop);
+  b.addEventListener('pointercancel', stop);
+  b.addEventListener('pointerleave', stop);
+});
+
+/* ---------- swipe on the pad ---------- */
+(() => {
+  const pad = document.querySelector('.pad');
+  let sx = 0, sy = 0, t0 = 0, fired = false;
+  pad.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; t0 = Date.now(); fired = false; });
+  pad.addEventListener('pointerup', e => {
+    if (fired) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.hypot(dx, dy) < 34 || Date.now() - t0 > 800) return;
+    const k = Math.abs(dx) > Math.abs(dy)
+      ? (dx > 0 ? 'DPAD_RIGHT' : 'DPAD_LEFT')
+      : (dy > 0 ? 'DPAD_DOWN' : 'DPAD_UP');
+    sendKey(k); buzz(8);
+  }, {passive: true});
+  pad.addEventListener('pointerdown', () => { fired = true; setTimeout(() => fired = false, 0); });
+})();
+
+/* ---------- tabs ---------- */
+$$('nav button').forEach(b => b.addEventListener('click', () => {
+  $$('nav button').forEach(x => x.classList.remove('on'));
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  b.classList.add('on');
+  $('#tab-' + b.dataset.tab).classList.add('active');
+}));
+
+/* ---------- state ---------- */
+function paint(s){
+  connected = !!s.connected;
+  $('#dot').className = 'dot' + (connected ? ' on' : (s.host ? ' warn' : ''));
+  if (s.device && s.device.model){
+    $('#devname').textContent = s.device.model;
+    $('#devinfo').textContent = [s.host, s.current_app, s.is_on ? '' : 'standby']
+      .filter(Boolean).join(' · ');
+  } else if (s.host){
+    $('#devname').textContent = s.host;
+    $('#devinfo').textContent = s.error || 'connecting…';
+  }
+  if (s.volume && typeof s.volume.level === 'number'){
+    const mx = s.volume.max || 100;
+    $('#volnum').textContent = s.volume.muted ? 'muted' : s.volume.level;
+    $('#volfill').style.width = Math.round(100 * s.volume.level / mx) + '%';
+  }
+  $('#banner').classList.toggle('show', !connected);
+}
+
+async function poll(){
+  if (document.hidden) return;
+  try { paint(await api('/api/state')); } catch (e) {}
+}
+setInterval(poll, 2000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+
+/* ---------- text ---------- */
+async function sendText(andEnter){
+  const v = $('#txt').value;
+  if (!v) return;
+  try {
+    await api('/api/text', {text: v});
+    if (andEnter) await api('/api/key', {key: 'ENTER'});
+    buzz(10);
+  } catch (e){ toast(e.message); }
+}
+$('#send').addEventListener('click', () => sendText(false));
+$('#sendEnter').addEventListener('click', () => sendText(true));
+$('#txt').addEventListener('keydown', e => { if (e.key === 'Enter') sendText(false); });
+
+/* digits */
+(() => {
+  const d = $('#digits');
+  for (let i = 1; i <= 9; i++) d.appendChild(mk('KEYCODE_' + i, String(i)));
+  d.appendChild(mk('KEYCODE_0', '0'));
+  function mk(k, label){
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.height = '52px';
+    b.onclick = () => { sendKey(k); buzz(6); };
+    return b;
+  }
+})();
+$('[data-key="DEL"]').addEventListener('click', () => sendKey('DEL'));
+
+/* ---------- scan ---------- */
+function renderTVs(tvs){
+  const box = $('#tvlist');
+  box.innerHTML = '';
+  if (!tvs.length){
+    box.innerHTML = '<p class="note">No TV answered. Check that the box is on and on the same subnet.</p>';
+    return;
+  }
+  tvs.forEach(tv => {
+    const b = document.createElement('button');
+    b.className = 'tv';
+    b.innerHTML = '<div class="meta"><b>' + esc(tv.name) + '</b><span>' + esc(tv.ip) +
+      (tv.model ? ' · ' + esc(tv.model) : '') + '</span></div>' +
+      '<span class="badge ' + (tv.paired_ready ? 'ok' : '') + '">' +
+      (tv.paired_ready ? 'ready' : 'no 6466') + '</span>';
+    b.onclick = () => connectOrPair(tv.ip);
+    box.appendChild(b);
+  });
+}
+
+let pairHost = null;
+
+function openPair(host){
+  pairHost = host;
+  $('#pairNote').innerHTML = 'Tap <b>Show code on TV</b>. The box displays a 6-character code — type it here.';
+  $('#pairCode').value = '';
+  $('#pairModal').classList.add('show');
+}
+
+$('#pairClose').onclick = async () => {
+  $('#pairModal').classList.remove('show');
+  try { await api('/api/pair/cancel', {}); } catch (e) {}
+};
+
+$('#pairStart').onclick = async () => {
+  if (!pairHost) return;
+  try {
+    $('#pairNote').textContent = 'Starting pairing…';
+    await api('/api/pair/start', {host: pairHost});
+    $('#pairNote').innerHTML = 'The TV is showing a <b>6-character code</b>. Type it below and press ↵.';
+    $('#pairCode').focus();
+    buzz(15);
+  } catch (e) {
+    $('#pairNote').textContent = 'Could not start pairing: ' + e.message;
+  }
+};
+
+$('#pairGo').onclick = async () => {
+  const code = $('#pairCode').value.trim().toUpperCase();
+  if (!code || !pairHost) return;
+  try {
+    $('#pairGo').disabled = true;
+    await api('/api/pair/code', {code});
+    $('#pairModal').classList.remove('show');
+    toast('Paired and connected');
+    buzz(25);
+    await poll();
+  } catch (e) {
+    toast(e.message);
+  } finally {
+    $('#pairGo').disabled = false;
+  }
+};
+
+$('#pairCode').addEventListener('keydown', e => { if (e.key === 'Enter') $('#pairGo').click(); });
+
+async function connectOrPair(host){
+  toast('Connecting to ' + host + '…');
+  try {
+    await api('/api/connect', {host});
+    await poll();
+    toast('Connected');
+    buzz(20);
+  } catch (e) {
+    openPair(host);
+    toast('Needs pairing');
+  }
+}
+
+async function boot(){
+  const s = await api('/api/state').catch(() => null);
+  if (s && s.connected) return;
+  $$('nav button').forEach(x => x.classList.remove('on'));
+  $$('.tab').forEach(x => x.classList.remove('active'));
+  const b = document.querySelector('nav button[data-tab="scan"]');
+  b.classList.add('on');
+  $('#tab-scan').classList.add('active');
+  $('#scanBtn').click();
+}
+
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+$('#scanBtn').addEventListener('click', async () => {
+  const b = $('#scanBtn');
+  b.disabled = true; b.textContent = 'Scanning…';
+  try { const r = await api('/api/scan', {}); renderTVs(r.tvs || []); }
+  catch (e){ toast(e.message); }
+  finally { b.disabled = false; b.textContent = 'Scan LAN'; }
+});
+
+$('#rescanQuick').addEventListener('click', async () => {
+  try { await api('/api/connect', {host: currentHost()}); toast('Reconnecting…'); }
+  catch (e){ toast(e.message); }
+});
+
+function currentHost(){
+  const s = $('#devinfo').textContent.split(' · ')[0];
+  return s && s.includes('.') ? s : null;
+}
+
+/* ---------- shortcuts ---------- */
+async function loadShortcuts(){
+  try {
+    const r = await api('/api/shortcuts');
+    const box = $('#shortcuts');
+    box.innerHTML = '';
+    (r.items || []).forEach(it => {
+      const b = document.createElement('button');
+      b.className = 'tv';
+      b.innerHTML = '<div class="meta"><b>' + esc(it.label) + '</b><span>' +
+        esc(it.key ? 'key' : it.link) + '</span></div>';
+      b.onclick = async () => {
+        try {
+          if (it.key) await api('/api/key', {key: it.key});
+          else await api('/api/launch', {link: it.link});
+          buzz(10);
+        } catch (e){ toast(e.message); }
+      };
+      box.appendChild(b);
+    });
+  } catch (e){}
+}
+
+poll(); loadShortcuts(); boot();
+</script>
+</body>
+</html>
