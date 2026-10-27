@@ -67,6 +67,11 @@ control.
 The repository does **not** ship a prebuilt APK. A debug-signed test build is
 fine for your own phone; use your own release key before distributing a build.
 
+## Live site & download
+
+- **Landing page:** [https://vijayaapardhu.dev/xstream-remote/](https://vijayaapardhu.dev/xstream-remote/)
+- **Direct APK download:** [XstreamRemote-2.0.apk](https://github.com/Vijayapardhu/xstream-remote/releases/download/v2.0.0/XstreamRemote-2.0.apk) (v2.0.0, ~226 KB, source-only repo)
+
 ## Release download
 
 A **release-style signed APK** is produced from this source:
