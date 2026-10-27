@@ -2429,6 +2429,24 @@
     chips.appendChild(el);
   });
 
+  $('#txtInput').addEventListener('focus', function () {
+    $('#tab-keyboard').hidden = false;
+    document.querySelector('.tab-btn[data-tab="keyboard"]').classList.add('on');
+    closeSheet();
+  });
+
+  $('#txtInput').addEventListener('input', function () {
+    var v = $('#txtInput').value;
+    try { if (Native && Native.text) Native.text(v); } catch (e) {}
+  });
+
+  $('#txtInput').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Backspace' || ev.key === 'Delete') {
+      try { if (Native && Native.key) Native.key('BACK'); } catch (e) {}
+      haptic('tick');
+    }
+  });
+
   $('#btnSendText').addEventListener('click', function () {
     var text = $('#txtInput').value;
     if (!text) { toast('Type something first'); return; }
