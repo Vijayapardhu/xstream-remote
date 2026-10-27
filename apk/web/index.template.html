@@ -7,9 +7,12 @@
 <title>Xstream Remote</title>
 <style>
   :root{
-    --bg:#050608; --panel:#101319; --panel2:#151922; --panel3:#1C212B;
-    --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.12);
-    --txt:#F3F5F9; --dim:#98A0B0; --dim2:#626A79;
+    --bg:#000000; /* pure black for OLED - true off state on AMOLED */
+    --panel:#0A0D13; /* slightly off-black for depth */
+    --panel2:#0F141D;
+    --panel3:#181E2A;
+    --line:rgba(255,255,255,.09); --line2:rgba(255,255,255,.14);
+    --txt:#EDEFF3; --dim:#9AA5B1; --dim2:#6C7683;
     --accent:#FF3B47; --accent2:#FF7A45; --accent-rgb:255,59,71; --glow:1;
     --red:var(--accent); --red2:var(--accent2); --green:#2ED573; --amber:#FFB020;
     --ease:cubic-bezier(.2,.7,.2,1);
@@ -21,13 +24,13 @@
     margin:0;background:var(--bg);color:var(--txt);overflow:hidden;
     font-family:"Roboto","Helvetica Neue",system-ui,-apple-system,sans-serif;
     -webkit-font-smoothing:antialiased;user-select:none;overscroll-behavior:none;
+    /* OLED optimization: tell the system to use the app background for the status/nav bars */
+    -webkit-app-background:var(--bg);
   }
+  /* OLED glow effect - subtle gradient at screen edges only (avoid full-screen radial blur) */
   body::before{
-    content:"";position:fixed;inset:-20%;z-index:0;pointer-events:none;
-    background:
-      radial-gradient(42% 30% at 12% 0%, rgba(255,59,71,.16), transparent 62%),
-      radial-gradient(36% 28% at 100% 8%, rgba(255,122,69,.07), transparent 60%),
-      radial-gradient(60% 44% at 50% 118%, rgba(70,90,130,.12), transparent 62%);
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:linear-gradient(180deg,transparent 0%,transparent 95%,rgba(0,0,0,.25) 100%);
   }
   button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
   input,textarea{font-family:inherit}
