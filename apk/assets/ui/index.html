@@ -2765,8 +2765,8 @@
       setPairStep(3);
       haptic('success');
       $('#pairSubmit').disabled = true;
-      // Stay open until the user taps Cancel / closes — don't auto-dismiss
-      // so the paired result stays visible on screen.
+      $('#pairModal').hidden = true;
+      if (!startedOnce) showConnect();
     } else if (ev.status === 'error') {
       setPairStatus(ev.message || 'Pairing failed. Try again.', 'error');
       setPairStep(2, true);
