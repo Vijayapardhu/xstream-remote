@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xstream Remote — Universal Android TV Remote</title>
+  <meta name="description" content="Xstream Remote is a universal Android TV remote with per-install pairing, app-aware controls, home-screen widgets, deep haptics, and real brand icons. LAN-only, no bundled client key, no APK in releases.">
+  <link rel="icon" href="assets/favicon-32.png">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <style>
+    :root {
+      --bg: radial-gradient(1200px 800px at 50% 0%, rgba(255, 59, 71, 0.14), transparent 70%), #06070a;
+      --surface: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%), #0b0d13;
+      --surface-2: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%), #10141d;
+      --ink: #f7f8fa;
+      --text: #e7e9ee;
+      --dim: #b8bcc8;
+      --dim-2: #7f8596;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 59, 71, 0.45);
+      --accent: #ff3b47;
+      --accent-2: #ff5a63;
+      --accent-glow: rgba(255, 59, 71, 0.4);
+      --radius-lg: 24px;
+      --radius-md: 18px;
+      --radius-sm: 14px;
+      --shadow-lg: 0 60px 120px -60px rgba(255, 59, 71, 0.35);
+      --shadow-card: 0 40px 80px -60px rgba(15, 17, 24, 0.9);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+    img { max-width: 100%; display: block; }
+    a { color: inherit; text-decoration: none; }
+    a:hover { text-decoration: none; }
+    ul { list-style: none; }
+    .container {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+    .skip {
+      position: absolute;
+      left: -9999px;
+      top: auto;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
+    .skip:focus {
+      left: 16px;
+      top: 16px;
+      width: auto;
+      height: auto;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      z-index: 100;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 80;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      background: radial-gradient(800px 120px at 50% 0%, rgba(255, 59, 71, 0.12), transparent), rgba(6, 7, 10, 0.88);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      height: 72px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      box-shadow: 0 20px 40px -24px var(--accent-glow);
+    }
+    .brand-text {
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .brand-mark {
+      background: linear-gradient(90deg, #ff6b72 0%, #ff3b47 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .nav-links a {
+      position: relative;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--dim);
+      transition: color 160ms ease;
+    }
+    .nav-links a::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: -10px;
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-2), transparent);
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 160ms ease;
+      opacity: 0.8;
+    }
+    .nav-links a:hover {
+      color: var(--ink);
+    }
+    .nav-links a:hover::after {
+      transform: scaleX(1);
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--text);
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 9px 20px;
+      transition: transform 140ms ease, box-shadow 200ms ease, border-color 200ms ease, color 200ms ease, background 200ms ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-ghost {
+      border-color: transparent;
+      color: var(--dim);
+    }
+    .btn-ghost:hover {
+      color: var(--ink);
+    }
+    .btn-outline {
+      border-color: var(--line);
+      background: radial-gradient(200px 80px at 50% 0%, rgba(255, 255, 255, 0.02), transparent), transparent;
+      color: var(--text);
+    }
+    .btn-outline:hover {
+      border-color: rgba(255, 90, 99, 0.7);
+      box-shadow: 0 0 0 1px rgba(255, 59, 71, 0.25);
+    }
+    .btn-primary {
+      position: relative;
+      background: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 55%), linear-gradient(180deg, #ff6b72 0%, #ee1620 100%);
+      color: #fff;
+      box-shadow: 0 30px 60px -40px var(--accent-glow);
+    }
+    .btn-primary::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+      pointer-events: none;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 40px 70px -40px rgba(255, 59, 71, 0.5);
+    }
+    .btn-primary:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+    }
+    .btn-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+    }
+    .mobile-menu.active {
+      display: block;
+    }
+    .mobile-menu-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(6, 7, 10, 0.8);
+      backdrop-filter: blur(8px);
+    }
+    .mobile-menu-panel {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      left: 12px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: radial-gradient(400px 200px at 50% 0%, rgba(255, 59, 71, 0.16), transparent), var(--surface);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+    }
+    .mobile-menu-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+    }
+    .mobile-menu-links {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 18px 18px;
+      gap: 8px;
+    }
+    .mobile-menu-links a {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      color: var(--dim);
+    }
+    .mobile-menu-links a:hover {
+      background: rgba(255, 255, 255, 0.01);
+      color: var(--ink);
+    }
+    .mobile-menu-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      padding: 0 18px 18px;
+    }
+
+    .hero {
+      position: relative;
+      padding: clamp(64px, 12vw, 140px) 0 clamp(56px, 10vw, 110px);
+      overflow: hidden;
+    }
+    .hero::before,
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .hero::before {
+      background: radial-gradient(900px 600px at 20% 10%, rgba(255, 59, 71, 0.18), transparent 65%), radial-gradient(700px 500px at 80% 0%, rgba(255, 90, 99, 0.12), transparent 70%);
+    }
+    .hero::after {
+      background: radial-gradient(1200px 400px at 50% 100%, rgba(255, 59, 71, 0.1), transparent 80%);
+      opacity: 0.8;
+    }
+    .hero-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(28px, 8vw, 72px);
+      align-items: center;
+    }
+    .hero-content {
+      grid-column: 1 / span 7;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: radial-gradient(200px 60px at 50% 0%, rgba(255, 255, 255, 0.05), transparent);
+      font-size: 11px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent-2);
+      width: fit-content;
+    }
+    .eyebrow-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fff 0%, var(--accent-2) 100%);
+      box-shadow: 0 0 0 6px rgba(255, 59, 71, 0.12);
+    }
+    .hero h1 {
+      font-size: clamp(38px, 8vw, 76px);
+      line-height: 0.98;
+      letter-spacing: -0.08em;
+      font-weight: 900;
+    }
+    .hero h1 .gradient-text {
+      display: block;
+      background: radial-gradient(120% 120% at 50% 0%, #fff 0%, rgba(247, 248, 250, 0.72) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero h1 .accent-text {
+      display: block;
+      background: linear-gradient(90deg, #ff6b72 0%, #ff3b47 55%, #ff8a8f 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .hero-lead {
+      max-width: 560px;
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--dim);
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: radial-gradient(180px 60px at 50% 0%, rgba(255, 255, 255, 0.03), transparent);
+      font-size: 13px;
+      color: var(--dim);
+    }
+    .meta-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ff8a8f 0%, var(--accent) 100%);
+      box-shadow: 0 0 0 6px rgba(255, 59, 71, 0.1);
+    }
+    .hero-media {
+      position: relative;
+      grid-column: 8 / span 5;
+      display: flex;
+      justify-content: center;
+    }
+    .hero-media::before {
+      content: "";
+      position: absolute;
+      width: clamp(260px, 32vw, 360px);
+      height: clamp(520px, 64vw, 720px);
+      border-radius: 42px;
+      background: radial-gradient(60% 60% at 50% 0%, rgba(255, 59, 71, 0.28), transparent 70%);
+      filter: blur(60px);
+      opacity: 0.9;
+    }
+    .phone-frame {
+      position: relative;
+      width: clamp(260px, 32vw, 360px);
+      aspect-ratio: 9 / 19.5;
+      border-radius: 38px;
+      padding: 9px;
+      background: radial-gradient(140% 140% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 100%);
+      box-shadow: var(--shadow-lg);
+    }
+    .phone-frame::after {
+      content: "";
+      position: absolute;
+      inset: 1px;
+      border-radius: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      pointer-events: none;
+    }
+    .phone-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      border-radius: 30px;
+      overflow: hidden;
+      background: #050608;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .phone-inner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38%;
+      height: 24px;
+      border-radius: 0 0 16px 16px;
+      background: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.12) 0%, rgba(5, 6, 8, 1) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: none;
+      z-index: 2;
+    }
+
+    section {
+      position: relative;
+      padding: clamp(56px, 10vw, 104px) 0;
+    }
+    section + section {
+      padding-top: 0;
+    }
+    .section-header {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-width: 780px;
+      margin: 0 auto clamp(30px, 7vw, 56px);
+      text-align: center;
+      align-items: center;
+    }
+    .section-header.align-left {
+      margin-left: 0;
+      margin-right: 0;
+      text-align: left;
+      align-items: flex-start;
+    }
+    .section-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent-2);
+      width: fit-content;
+    }
+    .section-title {
+      font-size: clamp(30px, 6vw, 54px);
+      line-height: 1.04;
+      letter-spacing: -0.06em;
+      font-weight: 800;
+    }
+    .section-lead {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--dim);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(14px, 4vw, 20px);
+    }
+    .feature-card {
+      grid-column: span 4;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: clamp(22px, 4vw, 30px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+    }
+    .feature-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(280px 160px at 50% 0%, rgba(255, 59, 71, 0.14), transparent 70%);
+      opacity: 0;
+      transition: opacity 200ms ease;
+    }
+    .feature-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255, 90, 99, 0.5);
+      box-shadow: 0 60px 100px -70px rgba(255, 59, 71, 0.4);
+    }
+    .feature-card:hover::before {
+      opacity: 1;
+    }
+    .feature-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      background: radial-gradient(120% 120% at 50% 0%, rgba(255, 255, 255, 0.12) 0%, transparent 70%), var(--surface-2);
+      color: var(--accent-2);
+    }
+    .feature-icon svg {
+      width: 22px;
+      height: 22px;
+    }
+    .feature-card h3 {
+      font-size: 19px;
+      letter-spacing: -0.02em;
+    }
+    .feature-card p {
+      color: var(--dim);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(14px, 4vw, 20px);
+    }
+    .step-card {
+      grid-column: span 4;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: clamp(24px, 4vw, 32px);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      text-align: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .step-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(260px 140px at 50% 0%, rgba(255, 59, 71, 0.12), transparent 70%);
+    }
+    .step-card > * {
+      position: relative;
+      z-index: 1;
+    }
+    .step-number {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 90, 99, 0.6);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0%, transparent 70%), linear-gradient(180deg, rgba(255, 106, 112, 0.9) 0%, rgba(238, 22, 32, 0.9) 100%);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 30px 60px -40px var(--accent-glow);
+    }
+    .step-card h3 {
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+    .step-card p {
+      color: var(--dim);
+      max-width: 290px;
+    }
+
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(16px, 6vw, 26px);
+      align-items: start;
+    }
+    .screen-card {
+      grid-column: span 6;
+      position: relative;
+      border-radius: clamp(24px, 6vw, 36px);
+      border: 1px solid var(--line);
+      padding: clamp(10px, 3vw, 14px);
+      background: radial-gradient(160% 160% at 50% 0%, rgba(255, 255, 255, 0.1) 0%, transparent 70%), var(--surface);
+      box-shadow: var(--shadow-card);
+    }
+    .screen-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(320px 200px at 50% 0%, rgba(255, 59, 71, 0.16), transparent 70%);
+      pointer-events: none;
+    }
+    .screen-frame {
+      position: relative;
+      border-radius: clamp(18px, 5vw, 26px);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      aspect-ratio: 9 / 19.5;
+    }
+    .screen-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .screen-label {
+      position: relative;
+      margin-top: clamp(12px, 3vw, 16px);
+      text-align: center;
+      color: var(--dim);
+      font-size: 14px;
+    }
+
+    .cta-section {
+      padding: clamp(36px, 9vw, 76px) 0 clamp(64px, 12vw, 112px);
+    }
+    .cta-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(22px, 6vw, 44px);
+      align-items: center;
+      border-radius: clamp(26px, 8vw, 38px);
+      border: 1px solid var(--line);
+      padding: clamp(32px, 9vw, 68px);
+      overflow: hidden;
+      background: radial-gradient(900px 500px at 50% 0%, rgba(255, 59, 71, 0.24), transparent 70%), var(--surface);
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+    .cta-card::before,
+    .cta-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .cta-card::before {
+      background: radial-gradient(700px 300px at 50% 100%, rgba(255, 59, 71, 0.18), transparent 80%);
+    }
+    .cta-card::after {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+      background-size: 120px 120px;
+      opacity: 0.08;
+      mix-blend-mode: screen;
+    }
+    .cta-content {
+      position: relative;
+      grid-column: 2 / span 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      z-index: 1;
+    }
+    .cta-title {
+      font-size: clamp(32px, 7vw, 60px);
+      line-height: 1.02;
+      letter-spacing: -0.06em;
+      font-weight: 800;
+    }
+    .cta-lead {
+      max-width: 660px;
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--dim);
+    }
+    .cta-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .cta-note {
+      font-size: 14px;
+      color: var(--dim-2);
+      max-width: 760px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
+    .cta-note code {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.01);
+      font-family: "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .privacy-section {
+      padding-bottom: clamp(56px, 10vw, 92px);
+    }
+    .privacy-card {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(16px, 6vw, 34px);
+      align-items: start;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--line);
+      padding: clamp(26px, 6vw, 42px);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .privacy-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(420px 220px at 0% 0%, rgba(255, 59, 71, 0.14), transparent 70%);
+    }
+    .privacy-header {
+      position: relative;
+      grid-column: 1 / span 5;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 1;
+    }
+    .privacy-header p {
+      color: var(--dim);
+    }
+    .privacy-list {
+      position: relative;
+      grid-column: 7 / span 6;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      z-index: 1;
+    }
+    .privacy-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 16px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+      background: radial-gradient(200px 100px at 50% 0%, rgba(255, 255, 255, 0.02), transparent);
+    }
+    .privacy-item strong {
+      font-size: 15px;
+    }
+    .privacy-item span {
+      color: var(--dim);
+      font-size: 14px;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding: clamp(36px, 8vw, 60px) 0 clamp(44px, 9vw, 68px);
+      background: radial-gradient(800px 200px at 50% 0%, rgba(255, 59, 71, 0.1), transparent 70%);
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(22px, 8vw, 44px);
+    }
+    .footer-brand {
+      grid-column: 1 / span 5;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .footer-brand p {
+      color: var(--dim);
+      max-width: 340px;
+    }
+    .footer-links {
+      grid-column: 7 / span 6;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(16px, 6vw, 34px);
+    }
+    .footer-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .footer-column h4 {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.22em;
+      color: var(--dim-2);
+    }
+    .footer-column a,
+    .footer-column span {
+      color: var(--dim);
+      font-size: 14px;
+    }
+    .footer-column a:hover {
+      color: var(--ink);
+    }
+    .footer-divider {
+      margin-top: clamp(24px, 6vw, 36px);
+      padding-top: clamp(16px, 4vw, 24px);
+      border-top: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: center;
+      color: var(--dim-2);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1180px) {
+      .hero-content { grid-column: 1 / span 12; }
+      .hero-media { grid-column: 1 / span 12; margin-top: clamp(16px, 6vw, 28px); }
+      .feature-card { grid-column: span 6; }
+      .step-card { grid-column: span 12; }
+      .screen-card { grid-column: span 12; }
+      .cta-content { grid-column: 1 / span 12; }
+      .privacy-header { grid-column: 1 / span 12; }
+      .privacy-list { grid-column: 1 / span 12; }
+      .footer-brand { grid-column: 1 / span 12; }
+      .footer-links { grid-column: 1 / span 12; }
+    }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .nav-actions .btn-ghost,
+      .nav-actions .btn-outline { display: none; }
+      .nav-toggle { display: inline-flex; }
+      .privacy-list { grid-template-columns: 1fr; }
+      .footer-links { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 680px) {
+      .container { width: min(1180px, calc(100% - 20px)); }
+      .feature-card { grid-column: span 12; }
+      .footer-links { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: stretch; }
+      .cta-actions { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; justify-content: center; }
+      .hero-meta { flex-direction: column; align-items: flex-start; }
+      .meta-pill { width: 100%; justify-content: flex-start; }
+      .cta-note { flex-direction: column; align-items: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <img class="brand-logo" src="assets/icon-192.png" alt="Xstream Remote icon">
+        <div class="brand-text">
+          <span>Xstream</span>
+          <span class="brand-mark">Remote</span>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#screenshots">Screenshots</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">GitHub</a>
+      </nav>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">View source</a>
+        <a class="btn btn-outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">GitHub</a>
+        <a class="btn btn-primary" href="#download">
+          Get the app
+          <span class="btn-icon" aria-hidden="true">
+            <i data-lucide="arrow-right"></i>
+          </span>
+        </a>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-backdrop" id="mobileMenuBackdrop"></div>
+    <div class="mobile-menu-panel">
+      <div class="mobile-menu-header">
+        <div class="brand">
+          <img class="brand-logo" src="assets/icon-192.png" alt="Xstream Remote icon">
+          <div class="brand-text">
+            <span>Xstream</span>
+            <span class="brand-mark">Remote</span>
+          </div>
+        </div>
+        <button class="nav-toggle" id="navClose" aria-label="Close menu">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
+      <nav class="mobile-menu-links">
+        <a href="#features" class="mobile-link">Features <i data-lucide="chevron-right"></i></a>
+        <a href="#how-it-works" class="mobile-link">How it works <i data-lucide="chevron-right"></i></a>
+        <a href="#screenshots" class="mobile-link">Screenshots <i data-lucide="chevron-right"></i></a>
+        <a href="#download" class="mobile-link">Download <i data-lucide="chevron-right"></i></a>
+        <a href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">GitHub <i data-lucide="external-link"></i></a>
+      </nav>
+      <div class="mobile-menu-actions">
+        <a class="btn btn-primary" href="#download">
+          Get the app
+          <span class="btn-icon" aria-hidden="true">
+            <i data-lucide="arrow-right"></i>
+          </span>
+        </a>
+        <a class="btn btn-outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">
+          View on GitHub
+          <span class="btn-icon" aria-hidden="true">
+            <i data-lucide="github"></i>
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <main id="content">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            <span>Universal Android TV Remote</span>
+          </div>
+          <h1>
+            <span class="gradient-text">Control your Android TV</span>
+            <span class="accent-text">with precision &amp; privacy</span>
+          </h1>
+          <p class="hero-lead">
+            Pair your phone to any Android TV over your LAN and control it with a refined, one-hand remote. App-aware controls, home-screen widgets, deep haptics, and real brand icons — with nothing leaving your network.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="#download">
+              Download &amp; build
+              <span class="btn-icon" aria-hidden="true">
+                <i data-lucide="arrow-right"></i>
+              </span>
+            </a>
+            <a class="btn btn-outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">
+              View on GitHub
+              <span class="btn-icon" aria-hidden="true">
+                <i data-lucide="external-link"></i>
+              </span>
+            </a>
+          </div>
+          <div class="hero-meta">
+            <div class="meta-pill">
+              <span class="meta-dot"></span>
+              <span>Source-only release</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-dot"></span>
+              <span>No bundled client key</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-dot"></span>
+              <span>No APK in releases</span>
+            </div>
+            <div class="meta-pill">
+              <span class="meta-dot"></span>
+              <span>LAN-only &amp; private</span>
+            </div>
+          </div>
+        </div>
+        <div class="hero-media">
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <div class="phone-inner">
+              <img src="assets/screenshots/remote.png" alt="Xstream Remote app showing the main remote interface">
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">
+            <span>Features</span>
+          </div>
+          <h2 class="section-title">Refined for every member of the home</h2>
+          <p class="section-lead">
+            Thoughtfully designed controls, tactile feedback, and smart context awareness come together for an experience that feels premium without sacrificing power.
+          </p>
+        </div>
+        <div class="feature-grid">
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="maximize-2"></i>
+            </div>
+            <h3>Easy &amp; larger controls</h3>
+            <p>Bigger buttons, generous spacing, and larger text make navigation effortless for all ages without cluttering the interface.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="vibrate"></i>
+            </div>
+            <h3>Deeper haptics</h3>
+            <p>Carefully tuned primitive-based thud, click, and tick patterns deliver a satisfyingly tactile response with every keypress.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="layout-grid"></i>
+            </div>
+            <h3>App-aware controls</h3>
+            <p>Context adapts automatically — Live TV shows Guide/Options/Captions, media apps reveal playback controls, and others surface quick actions.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="grid-2x2"></i>
+            </div>
+            <h3>Home-screen widgets</h3>
+            <p>Keep essential controls close with sleek 2×2 and 4×2 widgets for Power, Back, Home, volume, mute, and playback.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="palette"></i>
+            </div>
+            <h3>Real app icons</h3>
+            <p>Authentic artwork for YouTube, Netflix, Hotstar, Prime Video, Spotify, and the Play Store brings a polished look to your app tray.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <i data-lucide="shield-check"></i>
+            </div>
+            <h3>LAN-only &amp; private</h3>
+            <p>Per-install RSA client certificates, TV certificate pinning, and local-only traffic mean your controls never leave your network.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="how-it-works">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">
+            <span>Get started</span>
+          </div>
+          <h2 class="section-title">Pair once, control forever</h2>
+          <p class="section-lead">
+            Secure pairing is built in. Each install generates its own client certificate, and it's pinned to your TV after a quick code verification.
+          </p>
+        </div>
+        <div class="steps-grid">
+          <article class="step-card">
+            <div class="step-number">1</div>
+            <h3>Install</h3>
+            <p>Build or install Xstream Remote on your Android phone from a local build.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-number">2</div>
+            <h3>Pair securely</h3>
+            <p>Enable USB debugging on your TV and enter the six-character code shown on screen to pin the certificate.</p>
+          </article>
+          <article class="step-card">
+            <div class="step-number">3</div>
+            <h3>Control anywhere on LAN</h3>
+            <p>Use the remote, widgets, or app shortcuts over Wi-Fi. No account, no cloud, fully local.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="screenshots">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-kicker">
+            <span>Screenshots</span>
+          </div>
+          <h2 class="section-title">A closer look</h2>
+          <p class="section-lead">Clean layouts, crisp icons, and a remote designed to feel right at home on your device.</p>
+        </div>
+        <div class="screens-grid">
+          <figure class="screen-card">
+            <div class="screen-frame">
+              <img src="assets/screenshots/remote.png" alt="Main remote interface with D-pad, volume, and context controls">
+            </div>
+            <figcaption class="screen-label">Main remote with D-pad, volume &amp; context bar</figcaption>
+          </figure>
+          <figure class="screen-card">
+            <div class="screen-frame">
+              <img src="assets/screenshots/apps.png" alt="App shortcuts grid with real brand icons">
+            </div>
+            <figcaption class="screen-label">App shortcuts with real brand icons</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <section id="download" class="cta-section">
+      <div class="container">
+        <div class="cta-card">
+          <div class="cta-content">
+            <div class="eyebrow">
+              <span class="eyebrow-dot"></span>
+              <span>Download</span>
+            </div>
+            <h2 class="cta-title">Build locally. Stay in control.</h2>
+            <p class="cta-lead">
+              Xstream Remote is released source-only — no bundled client key, no signed APK in the repo. Build it yourself and sideload with confidence.
+            </p>
+            <div class="cta-actions">
+              <a class="btn btn-primary" href="https://github.com/Vijayapardhu/xstream-remote/releases/download/v2.0.0/XstreamRemote-2.0.apk" target="_blank" rel="noopener" download>
+                Download v2.0 APK (direct)
+                <span class="btn-icon" aria-hidden="true">
+                  <i data-lucide="arrow-right"></i>
+                </span>
+              </a>
+              <a class="btn btn-outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">
+                View repository
+                <span class="btn-icon" aria-hidden="true">
+                  <i data-lucide="external-link"></i>
+                </span>
+              </a>
+            </div>
+            <p class="cta-note">
+              <span>Build with <code>XSTREAM_STORE_PASS</code> set (see <code>docs/INSTALL.md</code>)</span>
+              <span>then sideload with <code>adb install -r apk\XstreamRemote-2.0.apk</code></span>
+              <span>See <a href="https://github.com/Vijayapardhu/xstream-remote/blob/main/docs/SETUP_BOX.md" target="_blank" rel="noopener">SETUP_BOX.md</a> for details.</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="privacy-section">
+      <div class="container">
+        <div class="privacy-card">
+          <div class="privacy-header">
+            <div class="section-kicker">
+              <span>Privacy &amp; safety</span>
+            </div>
+            <h2 class="section-title">Built with privacy by default</h2>
+            <p>No telemetry, no cloud dependencies, and strict scope of operation. Your TV remains under your control.</p>
+          </div>
+          <div class="privacy-list">
+            <article class="privacy-item">
+              <strong>Passive capture only</strong>
+              <span>No ARP spoofing, no MITM, no credential extraction.</span>
+            </article>
+            <article class="privacy-item">
+              <strong>Safe boundaries</strong>
+              <span>No DRM or subscription bypass, no flashing, no unlocking, no factory reset, no package deletion.</span>
+            </article>
+            <article class="privacy-item">
+              <strong>Scoped access</strong>
+              <span>Phone ADB is in scope; TV USB debugging remains out of scope.</span>
+            </article>
+            <article class="privacy-item">
+              <strong>Encrypted &amp; pinned</strong>
+              <span>TV certificate fingerprint pinned after pairing. All control traffic stays TLS over your LAN.</span>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand">
+            <img class="brand-logo" src="assets/icon-192.png" alt="Xstream Remote icon">
+            <div class="brand-text">
+              <span>Xstream</span>
+              <span class="brand-mark">Remote</span>
+            </div>
+          </div>
+          <p>A refined, private, LAN-only universal remote for Android TV. Built for control without compromise.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-column">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
+            <a href="#screenshots">Screenshots</a>
+            <a href="#download">Download</a>
+          </div>
+          <div class="footer-column">
+            <h4>Docs</h4>
+            <a href="https://github.com/Vijayapardhu/xstream-remote#readme" target="_blank" rel="noopener">README</a>
+            <a href="https://github.com/Vijayapardhu/xstream-remote/blob/main/docs/INSTALL.md" target="_blank" rel="noopener">Install guide</a>
+            <a href="https://github.com/Vijayapardhu/xstream-remote/issues" target="_blank" rel="noopener">Issues</a>
+          </div>
+          <div class="footer-column">
+            <h4>Legal</h4>
+            <a href="#">Privacy</a>
+            <a href="#">Terms</a>
+            <span>No affiliation with Airtel or Xstream.</span>
+          </div>
+        </div>
+      </div>
+      <div class="footer-divider">
+        <span>&copy; 2026 Xstream Remote. Brand icons are trademarks of their respective owners.</span>
+        <span>Not affiliated with Airtel, Xstream, or any TV/platform vendor.</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+    const navToggle = document.getElementById('navToggle');
+    const navClose = document.getElementById('navClose');
+    const mobileMenu = document.getElementById('mobileMenu');
+    const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
+    const mobileLinks = document.querySelectorAll('.mobile-link');
+
+    function openMenu() {
+      mobileMenu.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeMenu() {
+      mobileMenu.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    navToggle?.addEventListener('click', openMenu);
+    navClose?.addEventListener('click', closeMenu);
+    mobileMenuBackdrop?.addEventListener('click', closeMenu);
+    mobileLinks.forEach(link => link.addEventListener('click', closeMenu));
+  </script>
+</body>
+</html>
