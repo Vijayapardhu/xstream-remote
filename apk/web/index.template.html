@@ -2555,8 +2555,11 @@
       setPairStep(3);
       haptic('success');
       $('#pairSubmit').disabled = true;
-      $('#pairModal').hidden = true;
-      if (!startedOnce) showConnect();
+      // Keep dialog open 2s so user sees paired result before close
+      setTimeout(function () {
+        $('#pairModal').hidden = true;
+        if (!startedOnce) showConnect();
+      }, 2000);
     } else if (ev.status === 'error') {
       setPairStatus(ev.message || 'Pairing failed. Try again.', 'error');
       setPairStep(2, true);
