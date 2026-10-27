@@ -7,9 +7,9 @@ bundled client certificate.
 
 **v2.0** · about **118 KB** · Android 7.0+ (API 24) · target API 34
 
-| Remote | Keys | Apps |
-|:---:|:---:|:---:|
-| <img src="docs/screenshots/phone-remote.png" width="240" alt="Remote screen"> | <img src="docs/screenshots/phone-keys.png" width="240" alt="Keys screen"> | <img src="docs/screenshots/phone-connect.png" width="240" alt="Connect screen"> |
+| Remote | Keys | Connect | Keys (detail) | Remote (detail) | Connect (detail) |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/phone-remote.png" width="160" alt="Remote"> | <img src="docs/screenshots/phone-keys.png" width="160" alt="Keys"> | <img src="docs/screenshots/phone-connect.png" width="160" alt="Connect"> | <img src="docs/screenshots/keys.png" width="160" alt="Keys"> | <img src="docs/screenshots/remote.png" width="160" alt="Remote"> | <img src="docs/screenshots/connect.png" width="160" alt="Connect"> |
 
 More UI shots are in [`docs/screenshots/`](docs/screenshots/).
 
