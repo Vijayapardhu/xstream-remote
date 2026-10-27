@@ -3,6 +3,8 @@ apk/assets/client.pem
 apk/assets/client.key
 apk/keystore.jks
 apk/build.local.ps1
+apk/*.keystore
+apk/*.jks
 remote/certs/
 remote/pairs.json
 

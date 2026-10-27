@@ -67,6 +67,39 @@ control.
 The repository does **not** ship a prebuilt APK. A debug-signed test build is
 fine for your own phone; use your own release key before distributing a build.
 
+## Release download
+
+A **release-style signed APK** is produced from this source:
+
+```text
+apk\XstreamRemote-2.0.apk   (226 KB, v2 + v3 signatures, ~18 KB UI + ~75 KB dex)
+```
+
+Build it:
+
+```powershell
+cd apk
+$env:XSTREAM_STORE_PASS = "your-keystore-password"
+powershell -ExecutionPolicy Bypass -File build.ps1
+```
+
+Install:
+
+```powershell
+adb install -r apk\XstreamRemote-2.0.apk
+```
+
+Or copy `apk\XstreamRemote-2.0.apk` onto the phone and open it (allow file
+install).
+
+## Setup box guide
+
+How the release APK was made and validated using the Airtel Xstream box, and how
+to pair with it:
+
+- `docs/SETUP_BOX.md` — setup box instructions, build steps, pairing flow,
+  live-verified features, future items.
+
 ## Pair
 
 1. Open the app on the phone and make sure the phone and TV are on the same
