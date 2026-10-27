@@ -9,6 +9,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 TEMPLATE = os.path.join(ROOT, "web", "index.template.html")
 SPRITE = os.path.join(ROOT, "web", "sprite.svg")
+BRANDS = os.path.join(ROOT, "web", "brands.svg")
 OUT = os.path.join(ROOT, "assets", "ui", "index.html")
 
 PLACEHOLDER = "<!--ICONS-->"
@@ -19,6 +20,9 @@ def main():
         html = f.read()
     with open(SPRITE, encoding="utf-8") as f:
         sprite = f.read()
+    if os.path.exists(BRANDS):
+        with open(BRANDS, encoding="utf-8") as f:
+            sprite += f.read()
 
     if PLACEHOLDER not in html:
         raise SystemExit("placeholder %s missing from template" % PLACEHOLDER)

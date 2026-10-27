@@ -7,16 +7,11 @@ import android.util.Base64;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.File;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,11 +34,16 @@ final class TvBridge {
     private final SharedPreferences prefs;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private final ExecutorService scans = Executors.newSingleThreadExecutor();
+    private final ExecutorService macros = Executors.newSingleThreadExecutor();
     private final AtomicBoolean scanning = new AtomicBoolean(false);
     private final AtomicBoolean userClosed = new AtomicBoolean(false);
     private final Object sessionLock = new Object();
+    private final Object identityLock = new Object();
 
     private volatile AurSession session;
+    private volatile PairingSession pairing;
+    private volatile ClientIdentity identity;
+    private volatile String pairingHost = "";
     private volatile String host = "";
     private volatile String model = "";
     private volatile String vendor = "";
@@ -65,7 +65,6 @@ final class TvBridge {
         this.sink = sink;
         this.prefs = this.context.getSharedPreferences("xstream", Context.MODE_PRIVATE);
         this.host = prefs.getString("host", "");
-        this.clientFingerprint = readClientFingerprint();
     }
 
     // ------------------------------------------------------------- public
@@ -74,17 +73,33 @@ final class TvBridge {
         return prefs.getString("host", "");
     }
 
-    void connect(String target) {
-        if (target == null) {
-            return;
+    /**
+     * Whether this phone holds a TV certificate for the host. The caller still
+     * has to be on the same LAN; this is only the pairing check.
+     */
+    boolean isPaired(String target) {
+        String h = normalizeHost(target);
+        if (h.isEmpty()) {
+            return false;
         }
-        target = target.trim();
-        if (target.isEmpty()) {
+        return !prefs.getString(pairCertKey(h), "").isEmpty()
+                && !prefs.getString(pairFpKey(h), "").isEmpty();
+    }
+
+    /**
+     * Start the TV-code pairing flow. The TV shows the code after the native
+     * handshake reaches configuration_ack; the UI then calls pairFinish().
+     */
+    void pairStart(String target) {
+        String h = normalizeHost(target);
+        if (h.isEmpty()) {
             return;
         }
         final int gen = ++generation;
         userClosed.set(false);
-        host = target;
+        closeSession();
+        cancelPairing(false);
+        host = h;
         error = "";
         errorKind = "";
         model = "";
@@ -93,25 +108,139 @@ final class TvBridge {
         app = "";
         peerCert = "";
         rtt = 0;
+        level = -1;
+        max = -1;
         status = "connecting";
-        prefs.edit().putString("host", target).apply();
+        prefs.edit().putString("host", h).apply();
         emitState();
 
-        final String ip = target;
-        io.execute(() -> open(ip, gen));
+        io.execute(() -> {
+            if (gen != generation) {
+                return;
+            }
+            PairingSession fresh = null;
+            try {
+                ClientIdentity id = identity();
+                clientFingerprint = id.fingerprint;
+                if (gen != generation) {
+                    return;
+                }
+                emitState();
+                BoundPairing bound = new BoundPairing(h, gen);
+                fresh = new PairingSession(h, id.certDer, id.keyDer, bound);
+                bound.owner = fresh;
+                pairing = fresh;
+                pairingHost = h;
+                fresh.start();
+            } catch (Exception e) {
+                if (fresh != null) {
+                    fresh.close();
+                }
+                if (gen != generation) {
+                    return;
+                }
+                pairing = null;
+                pairingHost = "";
+                status = "error";
+                errorKind = "pair";
+                error = e.getMessage() == null
+                        ? "Could not start pairing. Try again."
+                        : e.getMessage();
+                emitPair("error", h, error, "");
+                emitState();
+            }
+        });
+    }
+
+    void pairFinish(String code) {
+        final PairingSession current = pairing;
+        if (current == null) {
+            String retryHost = pairingHost.isEmpty() ? host : pairingHost;
+            if (!retryHost.isEmpty()) {
+                pairStart(retryHost);
+            } else {
+                emitPair("error", "", "Pairing is not active. Start again.", "");
+            }
+            return;
+        }
+        final String hostAtStart = pairingHost;
+        final int gen = generation;
+        io.execute(() -> {
+            if (gen != generation) {
+                return;
+            }
+            try {
+                current.finish(code);
+            } catch (Exception e) {
+                if (gen != generation) {
+                    return;
+                }
+                String message = e.getMessage() == null
+                        ? "That code did not work. Try again."
+                        : e.getMessage();
+                emitPair("error", hostAtStart, message, "");
+            }
+        });
+    }
+
+    void pairCancel() {
+        generation++;
+        PairingSession current = pairing;
+        pairing = null;
+        pairingHost = "";
+        if (current != null) {
+            current.close();
+        }
+        status = "idle";
+        error = "";
+        errorKind = "";
+        emitPair("cancelled", host, "", "");
+        emitState();
+    }
+
+    void connect(String target) {
+        String h = normalizeHost(target);
+        if (h.isEmpty()) {
+            return;
+        }
+        if (!isPaired(h)) {
+            closeSession();
+            cancelPairing(false);
+            host = h;
+            status = "error";
+            errorKind = "pair";
+            error = "Pair this phone with the box first.";
+            prefs.edit().putString("host", h).apply();
+            emitState();
+            return;
+        }
+        final int gen = ++generation;
+        userClosed.set(false);
+        cancelPairing(false);
+        closeSession();
+        host = h;
+        error = "";
+        errorKind = "";
+        model = "";
+        vendor = "";
+        software = "";
+        app = "";
+        peerCert = "";
+        rtt = 0;
+        level = -1;
+        max = -1;
+        status = "connecting";
+        prefs.edit().putString("host", h).apply();
+        emitState();
+
+        io.execute(() -> open(h, gen));
     }
 
     void disconnect() {
         userClosed.set(true);
         generation++;
-        AurSession current;
-        synchronized (sessionLock) {
-            current = session;
-            session = null;
-        }
-        if (current != null) {
-            current.close();
-        }
+        closeSession();
+        cancelPairing(false);
         status = "disconnected";
         error = "";
         errorKind = "";
@@ -119,9 +248,16 @@ final class TvBridge {
     }
 
     void forget() {
+        String old = normalizeHost(host);
         disconnect();
-        prefs.edit().remove("host").apply();
+        SharedPreferences.Editor edit = prefs.edit().remove("host");
+        if (!old.isEmpty()) {
+            edit.remove(pairCertKey(old)).remove(pairFpKey(old));
+        }
+        edit.apply();
         host = "";
+        peerCert = "";
+        model = "";
         status = "idle";
         emitState();
     }
@@ -165,6 +301,80 @@ final class TvBridge {
         }
     }
 
+    /**
+     * Runs a user-defined macro on the bridge's I/O thread. Keeping the
+     * sequence here (rather than in the WebView) means timers keep running
+     * when the screen is off and steps cannot overtake each other.
+     *
+     * Input shape: {"name":"Movie night","steps":[{"type":"key","value":"HOME"},
+     * {"type":"wait","ms":400},{"type":"launch","value":"https://..."}]}
+     */
+    void macro(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return;
+        }
+        macros.execute(() -> runMacro(json));
+    }
+    private void runMacro(String json) {
+        String name = "Macro";
+        try {
+            JSONObject spec = new JSONObject(json);
+            name = spec.optString("name", "Macro");
+            JSONArray steps = spec.optJSONArray("steps");
+            if (steps == null || steps.length() == 0) {
+                toast("That macro has no steps");
+                return;
+            }
+
+            AurSession current = session;
+            if (current == null || !current.isReady()) {
+                toast("Not connected");
+                return;
+            }
+
+            emitMacro("start", name, "");
+            int count = Math.min(steps.length(), 100);
+            for (int i = 0; i < count; i++) {
+                if (!current.isReady()) {
+                    throw new IllegalStateException("Connection lost during macro");
+                }
+                JSONObject step = steps.optJSONObject(i);
+                if (step == null) {
+                    continue;
+                }
+                String type = step.optString("type", "");
+                if ("key".equals(type)) {
+                    String key = step.optString("value", "");
+                    if (!key.isEmpty()) {
+                        current.sendKey(key);
+                    }
+                } else if ("text".equals(type)) {
+                    String value = step.optString("value", "");
+                    if (!value.isEmpty()) {
+                        current.sendText(value);
+                    }
+                } else if ("launch".equals(type)) {
+                    String uri = step.optString("value", "");
+                    if (!uri.isEmpty()) {
+                        current.sendAppLink(uri);
+                    }
+                } else if ("wait".equals(type)) {
+                    int ms = step.optInt("ms", 300);
+                    if (ms > 0) {
+                        Thread.sleep(Math.min(ms, 10000));
+                    }
+                }
+            }
+            emitMacro("done", name, "");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            emitMacro("error", name, "Macro interrupted");
+        } catch (Exception e) {
+            emitMacro("error", name,
+                    e.getMessage() == null ? "Macro failed" : e.getMessage());
+        }
+    }
+
     void scan() {
         if (!scanning.compareAndSet(false, true)) {
             return;
@@ -200,16 +410,11 @@ final class TvBridge {
     void shutdown() {
         userClosed.set(true);
         generation++;
-        AurSession current;
-        synchronized (sessionLock) {
-            current = session;
-            session = null;
-        }
-        if (current != null) {
-            current.close();
-        }
+        closeSession();
+        cancelPairing(false);
         io.shutdownNow();
         scans.shutdownNow();
+        macros.shutdownNow();
     }
 
     // ------------------------------------------------------------ connect
@@ -231,9 +436,22 @@ final class TvBridge {
         BoundEvents bridgeEvents = new BoundEvents();
         AurSession fresh = null;
         try {
-            byte[] cert = readAsset("client.pem");
-            byte[] key = decodePemKey(readAsset("client.key"));
-            fresh = new AurSession(target, AurSession.PORT, cert, key, bridgeEvents);
+            ClientIdentity id = identity();
+            clientFingerprint = id.fingerprint;
+            if (gen != generation || userClosed.get()) {
+                return;
+            }
+            String pin = pinnedFingerprint(target);
+            if (pin.isEmpty()) {
+                host = target;
+                status = "error";
+                errorKind = "pair";
+                error = "Pair this phone with the box first.";
+                emitState();
+                return;
+            }
+            fresh = new AurSession(target, AurSession.PORT,
+                    id.certDer, id.keyDer, pin, bridgeEvents);
             bridgeEvents.owner = fresh;
             synchronized (sessionLock) {
                 session = fresh;
@@ -285,9 +503,18 @@ final class TvBridge {
             BoundEvents bridgeEvents = new BoundEvents();
             AurSession fresh = null;
             try {
-                byte[] cert = readAsset("client.pem");
-                byte[] key = decodePemKey(readAsset("client.key"));
-                fresh = new AurSession(host, AurSession.PORT, cert, key, bridgeEvents);
+                ClientIdentity id = identity();
+                clientFingerprint = id.fingerprint;
+                String pin = pinnedFingerprint(host);
+                if (pin.isEmpty()) {
+                    status = "error";
+                    errorKind = "pair";
+                    error = "Pair this phone with the box again.";
+                    emitState();
+                    return;
+                }
+                fresh = new AurSession(host, AurSession.PORT,
+                        id.certDer, id.keyDer, pin, bridgeEvents);
                 bridgeEvents.owner = fresh;
                 synchronized (sessionLock) {
                     session = fresh;
@@ -471,7 +698,139 @@ final class TvBridge {
         }
     }
 
+    private final class BoundPairing implements PairingSession.Events {
+        final String target;
+        final int gen;
+        volatile PairingSession owner;
+
+        BoundPairing(String target, int gen) {
+            this.target = target;
+            this.gen = gen;
+        }
+
+        private boolean current() {
+            return gen == generation && pairing == owner;
+        }
+
+        @Override
+        public void onWaiting() {
+            if (!current()) {
+                return;
+            }
+            emitPair("waiting", target, "Look at the TV for a 6-character code.", "");
+        }
+
+        @Override
+        public void onPaired(byte[] serverCert) {
+            if (!current()) {
+                return;
+            }
+            String fingerprint = storePair(target, serverCert);
+            pairing = null;
+            pairingHost = "";
+            peerCert = fingerprint;
+            emitPair("success", target, "Paired", fingerprint);
+            connect(target);
+        }
+
+        @Override
+        public void onError(String message) {
+            if (!current()) {
+                return;
+            }
+            pairing = null;
+            pairingHost = "";
+            status = "error";
+            errorKind = "pair";
+            error = message == null ? "Pairing failed." : message;
+            emitPair("error", target, error, "");
+            emitState();
+        }
+    }
+
     // -------------------------------------------------------------- utils
+
+    private ClientIdentity identity() throws Exception {
+        ClientIdentity local = identity;
+        if (local != null) {
+            return local;
+        }
+        synchronized (identityLock) {
+            local = identity;
+            if (local == null) {
+                File dir = new File(context.getFilesDir(), "identity");
+                local = ClientIdentity.loadOrCreate(dir);
+                identity = local;
+                clientFingerprint = local.fingerprint;
+            }
+        }
+        return local;
+    }
+
+    private static String normalizeHost(String target) {
+        return target == null ? "" : target.trim().toLowerCase(Locale.US);
+    }
+
+    private static String pairCertKey(String host) {
+        return "pair_cert_" + host;
+    }
+
+    private static String pairFpKey(String host) {
+        return "pair_fp_" + host;
+    }
+
+    private String pinnedFingerprint(String target) {
+        return prefs.getString(pairFpKey(normalizeHost(target)), "");
+    }
+
+    private String storePair(String target, byte[] serverCert) {
+        String h = normalizeHost(target);
+        String der = Base64.encodeToString(serverCert, Base64.NO_WRAP);
+        String fingerprint = ClientIdentity.sha256(serverCert);
+        prefs.edit()
+                .putString(pairCertKey(h), der)
+                .putString(pairFpKey(h), fingerprint)
+                .putString("host", h)
+                .apply();
+        return fingerprint;
+    }
+
+    private void closeSession() {
+        AurSession current;
+        synchronized (sessionLock) {
+            current = session;
+            session = null;
+        }
+        if (current != null) {
+            current.close();
+        }
+    }
+
+    private void cancelPairing(boolean notify) {
+        PairingSession current = pairing;
+        pairing = null;
+        pairingHost = "";
+        if (current != null) {
+            current.close();
+        }
+        if (notify) {
+            emitPair("cancelled", host, "", "");
+        }
+    }
+
+    private void emitPair(String statusValue, String target, String message, String fingerprint) {
+        try {
+            JSONObject event = new JSONObject();
+            event.put("type", "pair");
+            event.put("status", statusValue);
+            event.put("host", target == null ? "" : target);
+            event.put("message", message == null ? "" : message);
+            event.put("fingerprint", fingerprint == null ? "" : fingerprint);
+            sink.emit(event.toString());
+        } catch (Exception ignored) {
+            // nothing to report
+        }
+    }
 
     private void emitState() {
         try {
@@ -486,6 +845,7 @@ final class TvBridge {
             o.put("rtt", rtt);
             o.put("cert", clientFingerprint);
             o.put("peer", peerCert);
+            o.put("paired", isPaired(host));
             o.put("error", error);
             o.put("error_kind", errorKind);
             if (level >= 0) {
@@ -506,6 +866,19 @@ final class TvBridge {
             JSONObject event = new JSONObject();
             event.put("type", "toast");
             event.put("msg", message);
+            sink.emit(event.toString());
+        } catch (Exception ignored) {
+            // nothing to report
+        }
+    }
+
+    private void emitMacro(String status, String name, String message) {
+        try {
+            JSONObject event = new JSONObject();
+            event.put("type", "macro");
+            event.put("status", status);
+            event.put("name", name);
+            event.put("message", message);
             sink.emit(event.toString());
         } catch (Exception ignored) {
             // nothing to report
@@ -534,8 +907,11 @@ final class TvBridge {
     }
 
     private static String friendly(Exception e, String target, String kind) {
+        if ("pair".equals(kind)) {
+            return "Pair this phone with the box first.";
+        }
         if ("auth".equals(kind)) {
-            return "The box rejected this phone's certificate.";
+            return "The box rejected this phone's certificate. Pair this phone again.";
         }
         if ("timeout".equals(kind)) {
             return "No answer from " + target + ":6466. The box may be asleep.";
@@ -547,36 +923,5 @@ final class TvBridge {
         return message == null || message.isEmpty()
                 ? "Could not connect to " + target + "."
                 : message;
-    }
-
-    private byte[] readAsset(String name) throws IOException {
-        try (InputStream in = context.getAssets().open(name)) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = in.read(buffer)) > 0) {
-                out.write(buffer, 0, read);
-            }
-            return out.toByteArray();
-        }
-    }
-
-    private static byte[] decodePemKey(byte[] pemBytes) {
-        String pem = new String(pemBytes, StandardCharsets.UTF_8)
-                .replaceAll("-----BEGIN [^-]+-----", "")
-                .replaceAll("-----END [^-]+-----", "")
-                .replaceAll("\\s", "");
-        return Base64.decode(pem, Base64.DEFAULT);
-    }
-
-    private String readClientFingerprint() {
-        try {
-            CertificateFactory factory = CertificateFactory.getInstance("X.509");
-            X509Certificate certificate = (X509Certificate) factory.generateCertificate(
-                    new ByteArrayInputStream(readAsset("client.pem")));
-            return AurSession.sha256(certificate.getEncoded());
-        } catch (Exception e) {
-            return "";
-        }
     }
 }

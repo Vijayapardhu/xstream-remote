@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5A63"/>
+      <stop offset="0.55" stop-color="#EE1620"/>
+      <stop offset="1" stop-color="#9E0006"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.35" cy="0.30" r="0.9">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.40"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.30"/>
+    </radialGradient>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="30"/>
+    </filter>
+    <clipPath id="tile">
+      <rect x="0" y="0" width="1024" height="1024" rx="240" ry="240"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#tile)">
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#bg)"/>
+    <rect x="0" y="0" width="1024" height="1024" fill="url(#glow)"/>
+
+    <!-- soft glow behind the mark -->
+    <g filter="url(#soft)" opacity="0.55">
+      <path d="M300 300 L724 724 M724 300 L300 724" stroke="#FFFFFF" stroke-width="160"
+            stroke-linecap="round" fill="none"/>
+    </g>
+
+    <!-- X mark -->
+    <path d="M312 312 L712 712 M712 312 L312 712" stroke="#FFFFFF" stroke-width="122"
+          stroke-linecap="round" fill="none"/>
+
+    <!-- centre play accent (streaming) -->
+    <path d="M478 472 L562 512 L478 552 Z" fill="#FF3B47"/>
+  </g>
+</svg>

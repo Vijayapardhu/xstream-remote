@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Xstream Remote — Universal Android TV Remote</title>
+<meta name="description" content="Xstream Remote is a universal Android TV remote with per-install pairing, app-aware controls, home-screen widgets, deep haptics, and real brand icons. LAN-only, no bundled client key, no APK in releases.">
+<link rel="icon" href="assets/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<style>
+  :root{
+    --ink:#F2F4F8;
+    --dim:#9AA5B1;
+    --dim2:#5C6470;
+    --panel:#0B0C0F;
+    --panel2:#101218;
+    --line:#2A2E3A;
+    --accent:#FF3B47;
+    --accent2:#FF5A63;
+    --glow:rgba(255,59,71,.35);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:#07080B;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.55;-webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .container{max-width:1000px;margin:0 auto;padding:0 20px}
+  .skip{position:absolute;left:-9999px}
+
+  /* header */
+  header{position:sticky;top:0;z-index:50;background:rgba(7,8,11,.7);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:20px;letter-spacing:-.5px}
+  .brand mark{color:var(--accent2)}
+  .brand img{width:30px;height:30px;border-radius:8px;display:block}
+  .nav ul{display:flex;gap:26px;list-style:none}
+  .nav a{color:var(--ink);opacity:.85;font-size:14px;font-weight:600}
+  .nav a:hover{opacity:1}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--ink);
+    border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;transition:transform .1s,box-shadow .2s,border-color .2s;
+  }
+  .btn:hover{border-color:rgba(255,59,71,.45);box-shadow:0 0 0 1px rgba(255,59,71,.35),0 10px 24px rgba(255,59,71,.12)}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:linear-gradient(180deg,#FF5A63,#EE1620);border-color:transparent;box-shadow:0 0 0 1px rgba(255,59,71,.35)}
+  .btn.primary:hover{box-shadow:0 0 0 1px rgba(255,59,71,.55),0 14px 30px rgba(255,59,71,.22)}
+  .btn.outline{background:transparent}
+
+  /* hero */
+  .hero{padding:70px 0 56px;position:relative;overflow:hidden}
+  .hero::before{content:"";position:absolute;inset:-40% -10% -40%;background:radial-gradient(circle at 20% 30%,rgba(255,59,71,.18),transparent 60%),radial-gradient(circle at 90% 10%,rgba(255,90,99,.12),transparent 50%);z-index:-1}
+  .hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:34px;align-items:center}
+  .hero h1{font-size:42px;line-height:1.12;letter-spacing:-.02em}
+  .hero h1 mark{background:linear-gradient(90deg,rgba(255,59,71,.45),rgba(255,90,99,.25));color:#fff;border-radius:8px;padding:2px 10px;box-shadow:0 0 24px rgba(255,59,71,.35)}
+  .hero p{color:var(--dim);font-size:17px;margin-top:14px;max-width:460px}
+  .hero-actions{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap}
+  .phone{position:relative;width:100%;max-width:360px;aspect-ratio:9/16;margin:0 auto;border-radius:30px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+  .phone img{width:100%;height:100%;display:block}
+  .phone::after{content:"";position:absolute;inset:-6px;background:linear-gradient(135deg,#FF5A63,#EE1620);border-radius:34px;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:destination-out;mask-composite:exclude;pointer-events:none}
+
+  /* features */
+  section{padding:64px 0}
+  .sec-head{text-align:center;margin-bottom:40px}
+  .sec-head .kicker{color:var(--accent2);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;display:block;margin-bottom:8px}
+  .sec-head h2{font-size:28px;line-height:1.2}
+  .sec-head p{color:var(--dim);margin-top:10px;max-width:620px;margin-left:auto;margin-right:auto}
+  .feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:20px}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px 18px;
+    transition:transform .15s,border-color .2s,box-shadow .2s
+  }
+  .card:hover{border-color:rgba(255,59,71,.3);box-shadow:0 12px 30px rgba(255,59,71,.08)}
+  .card .mark{width:42px;height:42px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;margin-bottom:14px;color:var(--accent2);font-size:20px}
+  .card h3{font-size:16px;margin-bottom:8px}
+  .card p{font-size:13.5px;color:var(--dim);line-height:1.5}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:center}
+  .step .num{width:30px;height:30px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);color:var(--accent2);font-weight:800;font-size:15px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px}
+  .step h3{font-size:16px;margin-bottom:8px}
+  .step p{font-size:13.5px;color:var(--dim);line-height:1.5}
+
+  /* screenshots */
+  .screenshots{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+  .screenshots img{width:100%;aspect-ratio:9/16;object-fit:cover;border-radius:22px;border:1px solid var(--line);background:#000;display:block}
+
+  /* download */
+  .download{background:radial-gradient(circle at 50% 0,rgba(255,59,71,.16),transparent 60%),var(--panel2);border:1px solid var(--line);border-radius:26px;padding:44px 24px;text-align:center}
+  .download h2{font-size:26px;margin-bottom:8px}
+  .download p{color:var(--dim);margin-bottom:24px}
+  .download .note{font-size:12.5px;color:var(--dim2);margin-top:14px}
+
+  /* privacy */
+  .privacy{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:34px 26px;margin-top:10px}
+  .privacy h3{font-size:16px;margin-bottom:10px}
+  .privacy ul{color:var(--dim);font-size:13.5px;line-height:1.7;padding-left:20px}
+  .privacy li{margin-bottom:6px}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:40px 0 60px;color:var(--dim2);font-size:13px}
+  .foot-grid{display:flex;flex-wrap:wrap;gap:34px;margin-bottom:26px}
+  .foot div h4{color:var(--ink);font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.14em;font-weight:800}
+  .foot div a,.foot div span{color:var(--dim);font-size:13.5px;display:block;margin-bottom:6px}
+  .foot div a:hover{color:var(--ink)}
+  .foot .fine{border-top:1px solid var(--line);padding-top:20px;opacity:.7}
+
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);color:var(--accent2);font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:999px;margin-top:10px}
+  @media (max-width:768px){
+    .hero-grid{grid-template-columns:1fr}
+    .phone{max-width:280px}
+    .steps{grid-template-columns:1fr}
+    .nav ul{display:none}
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#content">Skip to content</a>
+
+<header>
+  <div class="container nav">
+    <div class="brand">
+      <img src="assets/icon-192.png" alt="">
+      Xstream <mark>Remote</mark>
+    </div>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How it works</a></li>
+      <li><a href="#screenshots">Screenshots</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">GitHub</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="content">
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <h1>Universal remote for your <mark>Android TV</mark> box</h1>
+        <p>Pair your phone to any Android TV over your LAN and control it with a one-hand, all-ages-friendly remote. App-aware controls, home-screen widgets, deep haptics, real app icons — and nothing leaves your network.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#download">Get the app<span aria-hidden="true"> →</span></a>
+          <a class="btn outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">View source<span aria-hidden="true"> →</span></a>
+        </div>
+        <div class="chip">Source-only release · No bundled client key · No APK in releases</div>
+      </div>
+      <div class="phone">
+        <img src="assets/screenshots/remote.png" alt="Xstream Remote UI">
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="container">
+      <div class="sec-head">
+        <span class="kicker">Features</span>
+        <h2>Built for every age</h2>
+        <p>A larger-control Easy mode, deeper haptics, app-aware rails, widgets, and real brand artwork make the remote approachable without losing power.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="card">
+          <div class="mark">◐</div>
+          <h3>Easy / larger controls</h3>
+          <p>Bigger buttons, larger text, and simplified panels so the remote is friendly for all ages.</p>
+        </div>
+        <div class="card">
+          <div class="mark">📳</div>
+          <h3>Deeper haptics</h3>
+          <p>Primitive-based thud/click/tick vibration patterns that feel deeper and more distinct per key.</p>
+        </div>
+        <div class="card">
+          <div class="mark">🧩</div>
+          <h3>App-aware controls</h3>
+          <p>Live TV shows Guide/Options/Captions, media apps show Rewind/Play/Forward, everything else shows Recent apps/Search/Home.</p>
+        </div>
+        <div class="card">
+          <div class="mark">📱</div>
+          <h3>Home-screen widgets</h3>
+          <p>2×2 and 4×2 widgets with Power, Back, Home, volume, mute and playback keys at your fingertips.</p>
+        </div>
+        <div class="card">
+          <div class="mark">🎨</div>
+          <h3>Real app icons</h3>
+          <p>Real YouTube, Netflix, Hotstar, Prime Video, Spotify and Play Store artwork on every app card.</p>
+        </div>
+        <div class="card">
+          <div class="mark">🔒</div>
+          <h3>LAN-only &amp; private</h3>
+          <p>Per-install RSA client certificates, TV certificate pinning, no cloud, no account, nothing leaves your LAN.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how-it-works">
+    <div class="container">
+      <div class="sec-head">
+        <span class="kicker">Get started</span>
+        <h2>Pair once, control forever</h2>
+        <p>Every install generates its own client certificate. The TV shows a six-character code; you type it in once and the certificate is pinned.</p>
+      </div>
+      <div class="steps">
+        <div class="step"><div class="num">1</div><h3>Install</h3><p>Build or install Xstream Remote on your Android phone.</p></div>
+        <div class="step"><div class="num">2</div><h3>Pair</h3><p>Enable USB debugging on the TV, enter the six-character code shown on screen.</p></div>
+        <div class="step"><div class="num">3</div><h3>Control</h3><p>Use the remote, widgets, or app shortcuts. Works over your local Wi-Fi only.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screenshots">
+    <div class="container">
+      <div class="sec-head">
+        <span class="kicker">Screenshots</span>
+        <h2>What it looks like</h2>
+      </div>
+      <div class="screenshots">
+        <img src="assets/screenshots/remote.png" alt="Main remote with D-pad, volume and context bar">
+        <img src="assets/screenshots/apps.png" alt="App shortcuts with real brand icons">
+      </div>
+    </div>
+  </section>
+
+  <section id="download">
+    <div class="container download">
+      <h2>Download &amp; build</h2>
+      <p>Xstream Remote is released <strong>source-only</strong>. There is no bundled client key and no APK in GitHub releases.</p>
+      <a class="btn primary" href="https://github.com/Vijayapardhu/xstream-remote/releases" target="_blank" rel="noopener">Releases &amp; source<span aria-hidden="true"> →</span></a>
+      <a class="btn outline" href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">Repository<span aria-hidden="true"> →</span></a>
+      <div class="note">To install, build the APK locally with <code>XSTREAM_STORE_PASS</code> set (see <code>docs/INSTALL.md</code>), then sideload it. USB debugging must be enabled on the TV.</div>
+    </div>
+  </section>
+
+  <section class="privacy">
+    <div class="container">
+      <h3>Privacy &amp; safety</h3>
+      <ul>
+        <li><strong>Passive capture only:</strong> no ARP spoofing, no MITM, no credential extraction.</li>
+        <li>No DRM or subscription bypass, no flashing/unlocking/factory reset, no package deletion.</li>
+        <li>Phone ADB is in scope; TV USB debugging remains out of scope.</li>
+        <li>TV certificate fingerprint is pinned after pairing; all control traffic is TLS over your LAN.</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container foot-grid">
+    <div>
+      <h4>Product</h4>
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How it works</a>
+      <a href="#download">Download</a>
+    </div>
+    <div>
+      <h4>Docs</h4>
+      <a href="https://github.com/Vijayapardhu/xstream-remote#readme" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/Vijayapardhu/xstream-remote" target="_blank" rel="noopener">Install guide</a>
+      <a href="https://github.com/Vijayapardhu/xstream-remote/issues" target="_blank" rel="noopener">Issues</a>
+    </div>
+    <div>
+      <h4>Legal</h4>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+      <span>No affiliation with Airtel or Xstream.</span>
+    </div>
+  </div>
+  <div class="fine">
+    &copy; 2026 Xstream Remote. Brand icons are trademarks of their respective owners. Not affiliated with Airtel, Xstream, or any TV/platform vendor.
+  </div>
+</footer>
+
+</body>
+</html>

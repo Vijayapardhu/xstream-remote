@@ -33,6 +33,14 @@ bridge, and a hand-written Android TV Remote Service (AUR) v2 client.
 | `web/index.template.html` | UI source: layout, styles, input handling, preview mode. |
 | `tools/make_ui.py` | Inlines the Lucide sprite into the final `assets/ui/index.html`. |
 | `tools/fetch_icons.py` | Caches Lucide SVGs and builds `web/sprite.svg`; cache allows offline builds. |
+| `tools/make_brands.py` | Builds `web/brands.svg` from Simple Icons SVGs (YouTube, Netflix, Spotify, Google Play, Airtel) plus real favicons for Hotstar and Prime Video. |
+| `Haptics.java` | Centralized native vibration engine: primitive thud/click/tick on API 31+, amplitude-shaped waveforms on API 26+, plain-duration fallback on older releases. |
+| `Widget2x2Provider.java` / `WidgetRemoteProvider.java` | `AppWidgetProvider`s for the 2×2 and 4×2 home-screen widgets. |
+| `WidgetActionReceiver.java` | Broadcast receiver that forwards widget key taps to `MainActivity`, which (re)connects and sends the key. |
+| `res/xml/widget_info_*.xml` | Widget metadata (min size, target cells, initial layout). |
+| `res/layout/widget_*.xml` | RemoteViews layouts for the widgets. |
+| `res/drawable/widget_key_bg.xml` | Widget key background shape. |
+| `site/` | Static landing page (`index.html` + assets) for the website. |
 | `build.ps1` | aapt2 → javac → d8 → zip assets → zipalign → apksigner. |
 
 The app uses no AndroidX or third-party runtime libraries. The UI is local HTML
@@ -170,7 +178,8 @@ and error state.
 
 ```text
 tools/fetch_icons.py        cached Lucide SVGs → web/sprite.svg
-tools/make_ui.py            template + sprite → assets/ui/index.html
+tools/make_brands.py        brand SVGs/favicons → web/brands.svg
+tools/make_ui.py            template + sprite + brands → assets/ui/index.html
 aapt2 compile --dir res     → build/res.zip
 aapt2 link                  → base APK + R.java (min 24, target 34)
 javac --release 11          → classes (with -parameters for the JS bridge)
@@ -181,10 +190,70 @@ apksigner                   → signed APK (v2 + v3)
 ```
 
 Assets are inserted explicitly into the zip because `aapt2 -A` writes Windows
-path separators on this host. The client identity is optional at build time:
-without it the APK builds and warns, but cannot connect. The signing keystore is
-created on first build if absent; the password comes from
-`XSTREAM_STORE_PASS`, never from source.
+path separators on this host. `apk/brands/` holds the real brand artwork
+(simple-icons SVGs plus real Hotstar/Prime Video favicons); `make_brands.py`
+inlines them into `web/brands.svg` so the Android WebView can `<use>` them. The
+generated `assets/ui/index.html` is committed so the APK can be assembled
+without a UI build, and regenerated on every `build.ps1` run. A `?preview=1`
+mode feeds mock events for headless screenshots.
+
+## v2 polish (2026)
+
+### Haptics
+All vibration is centralized in `Haptics.java`. On API 31+ patterns are built
+from vibration primitives: `PRIMITIVE_THUD` (low-frequency body) plus
+`PRIMITIVE_CLICK`/`PRIMITIVE_TICK` (edge), amplitude-scaled. Devices that do not
+expose those primitives fall back to amplitude-shaped waveforms on API 26+, then
+plain durations. Kinds: `tick` (direction/volume), `key`, `ok` (double thud),
+`back` (double click), `long`, `success`, `error`. D-pad directions and volume
+use `tick`; center/OK use `ok`; Back uses `back`. The app toggle still gates
+everything, and the haptics toggle gives a confirm pattern when turned on.
+
+### Real app icons
+A curated brand pack replaces the old colour-dot app cards: YouTube, Netflix,
+Spotify and Google Play from Simple Icons SVGs (official brand colours), and
+Hotstar/Prime Video from real favicon artwork. The sprite is inlined by
+`make_ui.py`. The app shortcuts list (`APP_SHORTCUTS`) now references brand
+symbol ids (`b-youtube`, `b-netflix`, `b-hotstar`, `b-primevideo`, `b-spotify`,
+`b-googleplay`) instead of hex colours.
+
+### Widgets
+Two home-screen widgets ship as `AppWidgetProvider`s with `RemoteViews` layouts
+(no WebView inside the widget):
+- `Widget2x2Provider` → `res/layout/widget_2x2.xml` (Power, Home, Back, OK).
+- `WidgetRemoteProvider` → `res/layout/widget_remote.xml` (Power, Back, Home, OK, volume, mute, play/pause).
+
+A widget tap launches `MainActivity` (singleTask) with a `widget_key` extra.
+`MainActivity` (re)connects to the saved, paired host and sends the key as soon
+as the session is ready, so a widget tap brings the remote forward and fires the
+key. `WidgetActionReceiver` forwards the broadcast. Widget status text reflects
+whether the phone is paired and to which host.
+
+### Launcher icon
+Redesigned as a red-glow "X" mark with a streaming play accent, in:
+- `res/mipmap-anydpi-v26/ic_launcher.xml` — adaptive icon (background +
+  foreground + monochrome).
+- `res/mipmap-anydpi-v26/ic_launcher_round.xml` — round adaptive variant.
+- `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_mono.xml`,
+  `ic_launcher_bg.xml`.
+- Legacy PNG mipmaps (mdpi–xxxhdpi), square and round.
+- `site/assets/icon-512.png` store asset.
+The manifest sets `android:roundIcon="@mipmap/ic_launcher_round"`.
+
+### Landing page
+A static, deployable site lives under `site/` (`index.html` + `assets/`): hero,
+feature grid, how-it-works steps, screenshots, download/build instructions, and
+a privacy & safety note. It links to the public source repo and releases; the
+APK itself is not committed.
+
+### Known limitations
+- Widgets launch the app to send a key (no background session kept warm); a
+  freshly killed process needs one pairing/connect in the app first.
+- Widget status reflects pairing only, not live connection state.
+- Real pairing completion still needs the TV's six-character code.
+- Release signing needs `XSTREAM_STORE_PASS`; debug builds use the debug keystore.
+- TV screen is not observable remotely; overlays are inferred from app events.
+```
 
 ## Security model (v1)
 

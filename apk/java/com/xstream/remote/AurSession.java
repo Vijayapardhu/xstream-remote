@@ -13,6 +13,7 @@ import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.SecureRandom;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -111,12 +112,18 @@ final class AurSession {
         KEYS.put("GREEN", 184);
         KEYS.put("YELLOW", 185);
         KEYS.put("BLUE", 186);
+        // Android KEYCODE_0..KEYCODE_9. Useful for channel numbers and macro
+        // sequences even though the stock Airtel remote omits a number pad.
+        for (int i = 0; i <= 9; i++) {
+            KEYS.put("NUM_" + i, 7 + i);
+        }
     }
 
     private final String host;
     private final int port;
-    private final byte[] certPem;
+    private final byte[] certDer;
     private final byte[] keyDer;
+    private final String pinnedFingerprint;
     private final Events events;
 
     private final Object writeLock = new Object();
@@ -134,16 +141,21 @@ final class AurSession {
     private volatile long fieldCounter;
     private volatile long connectStart;
 
-    AurSession(String host, int port, byte[] certPem, byte[] keyDer, Events events) {
+    AurSession(String host, int port, byte[] certDer, byte[] keyDer,
+               String pinnedFingerprint, Events events) {
         this.host = host;
         this.port = port;
-        this.certPem = certPem;
+        this.certDer = certDer;
         this.keyDer = keyDer;
+        this.pinnedFingerprint = pinnedFingerprint == null ? "" : pinnedFingerprint;
         this.events = events;
     }
 
     void connect() throws Exception {
         close();
+        if (pinnedFingerprint.isEmpty()) {
+            throw new IOException("This phone is not paired with the box");
+        }
         connectStart = System.currentTimeMillis();
 
         SSLContext context = buildContext();
@@ -164,7 +176,7 @@ final class AurSession {
                 events.onPeerCert(sha256(chain[0].getEncoded()));
             }
         } catch (Exception ignored) {
-            // fingerprint is informational only
+            // the trust manager already checked the pinned fingerprint
         }
 
         Thread thread = new Thread(this::readLoop, "aur-reader");
@@ -390,7 +402,7 @@ final class AurSession {
     private SSLContext buildContext() throws Exception {
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         X509Certificate certificate = (X509Certificate) factory.generateCertificate(
-                new ByteArrayInputStream(certPem));
+                new ByteArrayInputStream(certDer));
 
         PrivateKey privateKey = KeyFactory.getInstance("RSA")
                 .generatePrivate(new PKCS8EncodedKeySpec(keyDer));
@@ -411,8 +423,16 @@ final class AurSession {
             }
 
             @Override
-            public void checkServerTrusted(X509Certificate[] chain, String authType) {
-                // the box uses a self-signed certificate
+            public void checkServerTrusted(X509Certificate[] chain, String authType)
+                    throws CertificateException {
+                if (chain == null || chain.length == 0) {
+                    throw new CertificateException("The box did not present a certificate");
+                }
+                String actual = sha256(chain[0].getEncoded());
+                if (!actual.equalsIgnoreCase(pinnedFingerprint)) {
+                    throw new CertificateException(
+                            "The box certificate changed. Pair this phone again.");
+                }
             }
 
             @Override

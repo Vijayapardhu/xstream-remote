@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
+<meta name="viewport" content="width=390,initial-scale=1,viewport-fit=cover,user-scalable=no,maximum-scale=1">
 <meta name="theme-color" content="#07080B">
 <title>Xstream Remote</title>
 <style>
   :root{
-    --bg:#07080B; --panel:#101319; --panel2:#151922; --panel3:#1C212B;
+    --bg:#050608; --panel:#101319; --panel2:#151922; --panel3:#1C212B;
     --line:rgba(255,255,255,.075); --line2:rgba(255,255,255,.12);
     --txt:#F3F5F9; --dim:#98A0B0; --dim2:#626A79;
-    --red:#FF3B47; --red2:#FF7A45; --green:#2ED573; --amber:#FFB020;
+    --accent:#FF3B47; --accent2:#FF7A45; --accent-rgb:255,59,71; --glow:1;
+    --red:var(--accent); --red2:var(--accent2); --green:#2ED573; --amber:#FFB020;
     --ease:cubic-bezier(.2,.7,.2,1);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -125,6 +126,7 @@
   .errbox .top{display:flex;gap:8px;align-items:flex-start;color:#FF9AA0;font-size:12.5px;line-height:1.45}
   .errbox .top .ic{width:16px;height:16px;margin-top:1px}
   .errbox .help{margin-top:8px;font-size:11.5px;line-height:1.55;color:var(--dim2)}
+  .errbox .help .errpair{display:flex;width:100%;margin-top:10px;height:40px;font-size:12px}
 
   .note{display:flex;gap:9px;align-items:flex-start;padding:12px 13px;border-radius:14px;width:100%;
     background:rgba(255,255,255,.025);border:1px solid var(--line);margin-top:14px}
@@ -269,14 +271,7 @@
   .tabs button.on{color:#FF6B73;
     background:radial-gradient(62% 74% at 50% 100%,rgba(255,59,71,.16),transparent 76%)}
 
-  /* ---------- hud / toast ---------- */
-  .hud{position:fixed;top:calc(62px + env(safe-area-inset-top));right:18px;z-index:30;pointer-events:none;
-    display:flex;align-items:center;gap:7px;padding:9px 13px;border-radius:13px;
-    background:rgba(18,22,29,.94);border:1px solid var(--line2);backdrop-filter:blur(12px);
-    font-variant-numeric:tabular-nums;box-shadow:0 14px 30px rgba(0,0,0,.5);
-    opacity:0;transform:translateY(-6px);transition:.18s var(--ease)}
-  .hud.show{opacity:1;transform:none}
-  .hud .ic{width:16px;height:16px;color:var(--dim)}
+  /* ---------- toast ---------- */
   .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));z-index:40;
     transform:translate(-50%,10px);opacity:0;pointer-events:none;max-width:86vw;text-align:center;
     background:rgba(24,28,36,.97);border:1px solid var(--line2);color:var(--txt);font-size:12.5px;
@@ -291,8 +286,573 @@
     .radar{width:132px;height:132px;margin-top:4px}
     .radar-core{width:64px;height:64px}
   }
+  /* ============================================================
+     Red-glow Xstream surface + customization
+     ============================================================ */
+  body::before{
+    background:
+      radial-gradient(42% 30% at 12% 0%, rgba(var(--accent-rgb),.15), transparent 62%),
+      radial-gradient(36% 28% at 100% 8%, rgba(var(--accent-rgb),.06), transparent 60%),
+      radial-gradient(62% 46% at 50% 116%, rgba(54,68,98,.10), transparent 62%);
+  }
+  .hdr{padding:14px 18px 8px;gap:10px;align-items:center}
+  .hdr .ghostbtn{width:36px;height:36px;border-radius:11px;background:transparent;border:1px solid transparent;color:var(--dim)}
+  .hdr .ghostbtn:active{background:rgba(255,255,255,.06);border-color:var(--line);color:#fff}
+  .hdr .hdr-gear,.hdr .wifi{
+    width:42px;height:42px;border-radius:50%;color:#E7E9EE;
+    background:radial-gradient(circle at 38% 28%,#1D1417,#0A080A 72%);
+    border:1px solid rgba(255,255,255,.085);
+    box-shadow:0 8px 18px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .hdr .hdr-gear .ic,.hdr .wifi .ic{width:20px;height:20px}
+  .hdr .hdr-gear{margin-right:1px}
+  .hdr #btnMore{width:31px;border-radius:9px;background:transparent;border-color:transparent}
+  .hdr .brandtxt{display:flex;flex-direction:column;align-items:flex-start;flex:1;min-width:0;line-height:1.05}
+  .hdr .brandname{display:flex;align-items:center;gap:8px;font-size:21px;font-weight:700;letter-spacing:-.025em;line-height:1.1}
+  .brand-orb{width:19px;height:19px;color:var(--accent);stroke-width:2.2;filter:drop-shadow(0 0 7px rgba(var(--accent-rgb),.55))}
+  .brand-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px rgba(var(--accent-rgb),.72);flex:none}
+  .hdr .statuspill{margin:5px 0 0;padding:0;background:none;border:0;border-radius:0;gap:6px;font-size:12px;line-height:1.2;color:var(--dim)}
+  .hdr .statuspill.is-ok{color:var(--green)}
+  .hdr .statuspill.is-warn{color:var(--amber)}
+  .hdr .statuspill.is-err{color:#FF8A90}
+  .hdr .statuspill .pulse{width:6px;height:6px;animation:none;box-shadow:none}
+  .hdr-actions{display:flex;align-items:center;gap:2px;margin-left:auto}
+  .hdr .wifi{position:relative}
+  .wifi-dot{position:absolute;right:7px;bottom:7px;width:6px;height:6px;border-radius:50%;background:var(--green);border:1px solid var(--bg);box-shadow:0 0 8px rgba(46,213,115,.55)}
+  .hdr .wifi.off .wifi-dot{background:var(--dim2);box-shadow:none}
+
+  /* ---------- remote surface ---------- */
+  #tab-remote{padding:4px 18px calc(14px + env(safe-area-inset-bottom));gap:9px}
+  #tab-remote::before,#tab-remote::after{display:none}
+  .remote{display:flex;flex-direction:column;gap:9px}
+  .top-controls{display:grid;grid-template-columns:72px minmax(0,1fr) 72px;gap:12px;align-items:center;padding-top:2px}
+  .vol-rail{order:1}
+  .mid-controls{order:2}
+  .ch-rail{order:3}
+  .rail-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .rail{
+    width:70px;height:190px;border-radius:34px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:10px 0;
+    background:
+      radial-gradient(90% 42% at 50% 108%,rgba(var(--accent-rgb),.30),transparent 72%),
+      linear-gradient(180deg,rgba(30,12,16,.94),rgba(8,5,6,.98));
+    border:1px solid rgba(var(--accent-rgb),.28);
+    box-shadow:0 0 calc(30px * var(--glow)) rgba(var(--accent-rgb),.16),inset 0 -18px 26px rgba(var(--accent-rgb),.10),inset 0 0 18px rgba(var(--accent-rgb),.05),inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .rail-btn{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;color:var(--txt);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.065);
+    transition:background .12s,transform .1s,border-color .12s}
+  .rail-btn .ic{width:24px;height:24px;stroke-width:2.15}
+  .rail-btn:active{background:rgba(var(--accent-rgb),.18);border-color:rgba(var(--accent-rgb),.42);transform:scale(.93)}
+  .rail-mid{display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--dim)}
+  .rail-ico{width:30px;height:30px;display:grid;place-items:center}
+  .rail-ico .ic{width:26px;height:26px;color:rgba(255,255,255,.86)}
+  .rail-readout{font-size:14px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .rail-label{font-size:11px;line-height:1;color:var(--dim);letter-spacing:.03em}
+  .mid-controls{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding-top:2px}
+  .circle-wrap{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .circle-control{
+    width:70px;height:70px;border-radius:50%;display:grid;place-items:center;color:var(--txt);
+    background:linear-gradient(180deg,rgba(26,17,20,.96),rgba(8,6,7,.98));
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:0 10px 22px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.07);
+    transition:transform .1s var(--ease),background .12s,border-color .12s,color .12s;
+  }
+  .circle-control .ic{width:28px;height:28px;stroke-width:1.9}
+  .circle-control:active{transform:scale(.92);background:rgba(var(--accent-rgb),.16);border-color:rgba(var(--accent-rgb),.4)}
+  .circle-control.muted{color:var(--accent);border-color:rgba(var(--accent-rgb),.36);box-shadow:0 0 22px rgba(var(--accent-rgb),.14),inset 0 1px 0 rgba(255,255,255,.07)}
+  .circle-label{font-size:11px;line-height:1;color:var(--dim)}
+
+  .action-wrap{
+    padding:4px;border-radius:21px;
+    border:1px solid rgba(var(--accent-rgb),.18);
+    background:rgba(var(--accent-rgb),.03);
+    box-shadow:0 0 calc(26px * var(--glow)) rgba(var(--accent-rgb),.09);
+  }
+  .action-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:1px}
+  .action-row::-webkit-scrollbar{display:none}
+  .action-tile{
+    flex:1 0 calc((100% - 16px) / 3);min-width:88px;height:74px;border-radius:16px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    font-size:11.5px;font-weight:600;color:var(--dim);position:relative;
+    background:linear-gradient(180deg,rgba(21,23,29,.97),rgba(9,10,13,.99));
+    border:1px solid rgba(255,255,255,.075);
+    transition:transform .1s var(--ease),background .15s,color .15s;
+  }
+  .action-tile .ic{width:23px;height:23px}
+  .action-tile span{max-width:100%;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .action-tile.accent{
+    color:#fff;border-color:rgba(255,255,255,.20);
+    background:var(--accent);
+    background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(0,0,0,.20));
+    box-shadow:0 0 calc(26px * var(--glow)) rgba(var(--accent-rgb),.28),inset 0 1px 0 rgba(255,255,255,.22);
+  }
+  .action-tile:active{transform:scale(.972)}
+  .action-tile.add-tile{border-style:dashed;color:var(--accent);background:rgba(var(--accent-rgb),.04)}
+  .macro-badge{position:absolute;top:6px;right:7px;width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(var(--accent-rgb),.6)}
+
+  .padzone{flex:1 1 auto;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;padding:8px 0 2px}
+  .padwrap{position:relative;width:min(86vw,var(--pad-max,350px));max-width:100%;aspect-ratio:1;flex:none}
+  .remote .pad{
+    width:100%;height:100%;border-radius:50%;touch-action:none;
+    background:
+      conic-gradient(from 45deg at 50% 50%,
+        rgba(255,255,255,.028) 0deg 86deg, transparent 86deg 94deg,
+        rgba(255,255,255,.012) 94deg 176deg, transparent 176deg 184deg,
+        rgba(255,255,255,.028) 184deg 266deg, transparent 266deg 274deg,
+        rgba(255,255,255,.012) 274deg 356deg, transparent 356deg 360deg),
+      radial-gradient(circle at 34% 26%,#231016 0%,#130A0D 44%,#070506 80%);
+    border:1px solid rgba(var(--accent-rgb),.30);
+    box-shadow:0 0 0 1px rgba(var(--accent-rgb),.08),0 0 calc(44px * var(--glow)) rgba(var(--accent-rgb),.20),
+      inset 0 1px 0 rgba(255,255,255,.08),inset 0 -20px 44px rgba(0,0,0,.6);
+  }
+  .remote .pad::before{inset:9px;border:1px solid rgba(var(--accent-rgb),.14)}
+  .remote .pad::after{inset:44px;border:1px solid rgba(255,255,255,.035)}
+  .pad-cross{
+    position:absolute;inset:9%;border-radius:50%;pointer-events:none;z-index:0;
+    background:
+      linear-gradient(90deg,transparent calc(50% - .5px),rgba(255,255,255,.055) 50%,transparent calc(50% + .5px)),
+      linear-gradient(0deg,transparent calc(50% - .5px),rgba(255,255,255,.055) 50%,transparent calc(50% + .5px));
+  }
+  .remote .seg{color:#A2A8B2;z-index:1}
+  .remote .seg .ic{width:26px;height:26px;stroke-width:2.15}
+  .remote .seg.on{color:#fff;background:radial-gradient(circle,rgba(var(--accent-rgb),.24),transparent 70%);transform:scale(1.06)}
+  .remote .padok{
+    inset:34%;z-index:1;border-radius:50%;display:grid;place-items:center;pointer-events:none;
+    font-weight:700;font-size:16px;letter-spacing:.10em;color:#fff;text-indent:.10em;
+    background:radial-gradient(circle at 35% 30%,#FF6670,var(--accent) 55%,#C61520 100%);
+    border:1px solid rgba(255,255,255,.24);
+    box-shadow:0 0 calc(26px * var(--glow)) rgba(var(--accent-rgb),.42),inset 0 2px 8px rgba(255,255,255,.20),inset 0 -8px 18px rgba(0,0,0,.20);
+    transition:transform .1s var(--ease),box-shadow .18s,filter .12s;
+  }
+  .remote .padok.on{transform:scale(.93);filter:brightness(1.08);box-shadow:0 0 0 1px rgba(255,255,255,.22),0 0 34px rgba(var(--accent-rgb),.48),inset 0 2px 10px rgba(0,0,0,.35)}
+  .home-float{
+    position:absolute;right:-34px;top:-16px;z-index:2;
+    width:64px;height:64px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    font-size:10px;font-weight:600;color:var(--dim);flex:none;margin:0;
+    background:linear-gradient(180deg,#171920,#090A0D);border:1px solid rgba(255,255,255,.10);
+    box-shadow:0 12px 24px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06);
+    transition:transform .1s var(--ease),background .12s,color .12s;
+  }
+  .home-float .ic{width:23px;height:23px;color:var(--txt)}
+  .home-float:active{transform:scale(.93);background:rgba(var(--accent-rgb),.16);border-color:rgba(var(--accent-rgb),.4);color:#fff}
+
+  .remote.volume-right .vol-rail{order:3}
+  .remote.volume-right .ch-rail{order:1}
+  .remote.no-channel .ch-rail{display:none}
+  .remote.no-channel .top-controls{grid-template-columns:72px minmax(0,1fr)}
+  .remote.no-channel .mid-controls{grid-column:2}
+  body.hide-labels .rail-label,body.hide-labels .circle-label,body.hide-labels .action-tile span,body.hide-labels .home-float span{display:none}
+  body.hide-labels .rail{height:178px}
+  body.hide-labels .home-float{height:58px;width:58px}
+
+  /* ---------- panel heads / apps / numbers ---------- */
+  .panel-head{display:flex;align-items:center;gap:10px;margin:3px 0 9px;min-height:36px}
+  .panel-head .ghostbtn{width:34px;height:34px;border-radius:11px;flex:none;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim)}
+  .panel-head .ghostbtn:active{background:var(--panel3);color:#fff}
+  .panel-head > div{min-width:0;flex:1}
+  .panel-head h2{margin:0;font-size:15px;line-height:1.2;font-weight:700;letter-spacing:-.01em;text-transform:none;color:var(--txt)}
+  .panel-head span{display:block;font-size:10.5px;color:var(--dim2);margin-top:2px}
+  .panel-head #btnCustomDone{margin-left:auto;color:var(--accent);border-color:rgba(var(--accent-rgb),.25)}
+  .appgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:7px}
+  .appcard{display:flex;align-items:center;gap:12px;height:62px;padding:0 16px;border-radius:16px;text-align:left;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);font-size:13px;color:var(--txt)}
+  .appcard .app-ic{width:44px;height:44px;border-radius:12px;flex:none;display:grid;place-items:center;
+    background:#0B0C0F;border:1px solid rgba(255,255,255,.09);overflow:hidden;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 0 12px rgba(0,0,0,.35)}
+  .appcard .app-ic svg{width:29px;height:29px;display:block}
+  .appcard .app-ic svg.cover{width:100%;height:100%}
+  .appcard:active{background:var(--panel3);transform:scale(.985)}
+  .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:5px}
+  .numbtn{height:64px;border-radius:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);
+    font-size:21px;font-weight:600;color:var(--txt);display:grid;place-items:center}
+  .numbtn.small{font-size:13px;color:var(--dim)}
+  .numbtn:active{background:rgba(var(--accent-rgb),.14);border-color:rgba(var(--accent-rgb),.35);transform:scale(.97)}
+  .numbtn .ic{width:20px;height:20px}
+
+  /* ---------- bottom sheet ---------- */
+  .sheet{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+  .sheet-scrim{position:absolute;inset:0;background:rgba(0,0,0,.64);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);animation:fadeIn .16s ease}
+  .sheet-card{position:relative;width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,#13161C,#090B0F);border:1px solid var(--line2);border-bottom:0;
+    box-shadow:0 -22px 64px rgba(0,0,0,.65);animation:sheetUp .2s var(--ease)}
+  .sheet-grip{width:36px;height:4px;border-radius:99px;background:rgba(255,255,255,.16);margin:0 auto 12px}
+  .sheet-title{display:flex;align-items:center;justify-content:space-between;font-size:15px;font-weight:700;margin-bottom:10px}
+  .sheet-title .ghostbtn{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim)}
+  .more-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .more-item{display:flex;align-items:center;gap:9px;height:52px;padding:0 13px;border-radius:14px;text-align:left;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);font-size:12.5px;color:var(--dim)}
+  .more-item .ic{width:18px;height:18px;color:var(--dim)}
+  .more-item:active{background:rgba(var(--accent-rgb),.12);border-color:rgba(var(--accent-rgb),.3);color:#fff}
+  .sheet-note{font-size:10.5px;color:var(--dim2);line-height:1.5;margin-top:12px;text-align:center}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes sheetUp{from{transform:translateY(28px);opacity:.4}to{transform:none;opacity:1}}
+
+  /* ---------- modals ---------- */
+  .modal{position:fixed;inset:0;z-index:80;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+  .modal-scrim{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .modal-card{position:relative;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;scrollbar-width:none;
+    border-radius:22px;padding:16px;background:linear-gradient(180deg,#13161C,#080A0E);border:1px solid var(--line2);
+    box-shadow:0 30px 80px rgba(0,0,0,.72);animation:sheetUp .18s var(--ease)}
+  .modal-card::-webkit-scrollbar{display:none}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
+  .modal-head h3{margin:0;font-size:15px;font-weight:700}
+  .modal-head .ghostbtn{width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--dim)}
+  .modal-label{display:block;font-size:10.5px;color:var(--dim2);margin:11px 0 5px;letter-spacing:.02em}
+  .modal-card input,.modal-card select{width:100%;height:42px;border-radius:11px;background:#080A0E;border:1px solid var(--line);
+    color:var(--txt);padding:0 11px;font:500 12.5px "Roboto",system-ui,sans-serif;outline:none}
+  .modal-card input:focus,.modal-card select:focus{border-color:rgba(var(--accent-rgb),.42);box-shadow:0 0 0 3px rgba(var(--accent-rgb),.08)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+  .modal-actions .btn{height:40px;padding:0 14px;font-size:12px}
+  .checkinline{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:12.5px;color:var(--dim)}
+  .modal-card .checkinline input[type="checkbox"]{
+    display:inline-block;width:20px;height:20px;min-width:20px;flex:none;margin:0;padding:0;
+    border:1px solid rgba(255,255,255,.20);border-radius:6px;background:#080A0E;
+    -webkit-appearance:none;appearance:none;
+  }
+  .modal-card .checkinline input[type="checkbox"]:checked{
+    background-color:var(--accent);border-color:var(--accent);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
+    background-size:13px 13px;background-position:center;background-repeat:no-repeat;
+  }
+  .icon-select-row{display:flex;align-items:center;gap:8px}
+  .icon-select-row select{flex:1;min-width:0}
+  .icon-preview{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:#080A0E;border:1px solid var(--line);color:var(--accent);flex:none}
+  .icon-preview .ic{width:20px;height:20px}
+  .pair-card{max-width:420px}
+  .pair-badge{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;margin:3px 0 10px;
+    background:rgba(var(--accent-rgb),.12);border:1px solid rgba(var(--accent-rgb),.24);color:var(--accent)}
+  .pair-badge .ic{width:24px;height:24px}
+  .pair-lede{margin:0;font-size:12px;line-height:1.55;color:var(--dim)}
+  .pair-hostline{margin-top:10px;font-size:10.5px;color:var(--dim2)}
+  .pair-hostline b{color:var(--txt);font-weight:600}
+  .modal-card .pair-code{
+    height:58px;text-align:center;text-transform:uppercase;letter-spacing:.34em;
+    font:700 26px/1 ui-monospace,SFMono-Regular,Menlo,monospace;padding-left:.34em;
+    background:#050608;border-color:rgba(var(--accent-rgb),.30)
+  }
+  .pair-status{margin-top:10px;min-height:18px;font-size:11px;line-height:1.5;color:var(--dim2)}
+  .pair-status.error{color:#FF9AA0}
+  .pair-status.ok{color:#72E3A4}
+  .macro-help{font-size:10.5px;line-height:1.5;color:var(--dim2);margin:6px 0 9px}
+  #macroSteps{display:flex;flex-direction:column;gap:6px}
+  .step-row{display:flex;align-items:center;gap:6px;padding:7px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .step-type{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dim2);width:32px;flex:none}
+  .step-fields{display:flex;align-items:center;gap:5px;flex:1;min-width:0}
+  .step-fields select,.step-fields input{height:34px;border-radius:8px;background:#080A0E;border:1px solid var(--line);color:var(--txt);padding:0 7px;font-size:11.5px;min-width:0}
+  .step-fields select{flex:1}
+  .step-fields input{flex:1}
+  .step-fields .ms{font-size:10px;color:var(--dim2);flex:none}
+  .step-actions{display:flex;gap:3px;flex:none}
+  .step-actions .iconbtn{width:26px;height:26px;border-radius:7px}
+  .step-add-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .step-add-row .btn{height:34px;padding:0 10px;font-size:11px;border-radius:9px}
+  .empty-step{font-size:11px;color:var(--dim2);padding:12px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+
+  /* ---------- customization ---------- */
+  .cust-section{margin-top:14px}
+  .cust-section .h2{margin:0 2px 7px}
+  .cust-card{border-radius:16px;background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--line);padding:4px 12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}
+  .cust-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045);font-size:12px}
+  .cust-row:last-child{border-bottom:0}
+  .cust-row .lab{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .cust-row .lab b{font-weight:600;font-size:12px}
+  .cust-row .lab span{font-size:10px;color:var(--dim2);line-height:1.35}
+  .swatches{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+  .swatch{width:26px;height:26px;border-radius:50%;border:2px solid transparent;background:var(--sw);box-shadow:inset 0 0 0 1px rgba(0,0,0,.3);flex:none}
+  .swatch.on{border-color:#fff;box-shadow:0 0 0 2px var(--bg),0 0 12px var(--sw)}
+  input[type="color"]{width:38px;height:30px;padding:2px;border-radius:8px;background:#080A0E;border:1px solid var(--line);flex:none}
+  .toggle{width:42px;height:24px;border-radius:99px;background:#20242C;position:relative;border:1px solid var(--line);flex:none}
+  .toggle span{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#8A93A3;transition:.15s var(--ease)}
+  .toggle.on{background:rgba(var(--accent-rgb),.26);border-color:rgba(var(--accent-rgb),.4)}
+  .toggle.on span{left:20px;background:var(--accent);box-shadow:0 0 8px rgba(var(--accent-rgb),.45)}
+  .segctl{display:inline-flex;background:#0A0C10;border:1px solid var(--line);border-radius:10px;padding:2px;gap:2px;flex:none}
+  .segctl button{height:29px;padding:0 9px;border-radius:8px;font-size:10.5px;color:var(--dim)}
+  .segctl button.on{background:rgba(var(--accent-rgb),.16);color:#fff;border:1px solid rgba(var(--accent-rgb),.26)}
+  .tile-list,.macro-list{display:flex;flex-direction:column;gap:7px}
+  .tile-row,.macro-row{display:flex;align-items:center;gap:7px;padding:8px 9px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--line)}
+  .ticon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#0A0C10;border:1px solid var(--line);color:var(--accent);flex:none}
+  .ticon .ic{width:16px;height:16px}
+  .tmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .tmeta b{font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tmeta span{font-size:9.5px;color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .iconbtn{width:27px;height:27px;border-radius:7px;display:grid;place-items:center;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--line);flex:none}
+  .iconbtn .ic{width:14px;height:14px}
+  .iconbtn:active{background:var(--panel3);color:#fff}
+  .iconbtn:disabled{opacity:.28}
+  .iconbtn.danger{color:#FF7A80}
+  .addrow{width:100%;height:42px;margin-top:8px;border-radius:11px;border:1px dashed rgba(var(--accent-rgb),.32);color:var(--accent);font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(var(--accent-rgb),.025)}
+  .addrow:active{background:rgba(var(--accent-rgb),.08)}
+  .empty-cust{font-size:11px;color:var(--dim2);text-align:center;padding:14px;border:1px dashed var(--line);border-radius:11px}
+  .gesture-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.045)}
+  .gesture-row:last-child{border-bottom:0}
+  .gesture-row .lab{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .gesture-row .lab b{font-size:12px;font-weight:600}
+  .gesture-row .lab span{font-size:10px;color:var(--dim2)}
+  .gesture-row select{max-width:160px;height:34px;border-radius:9px;background:#0A0C10;border:1px solid var(--line);color:var(--txt);padding:0 8px;font-size:11px}
+  .jsonbox{width:100%;min-height:104px;border-radius:11px;background:#080A0E;border:1px solid var(--line);color:var(--dim);
+    padding:10px;font:10px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical;outline:none}
+  .jsonbox:focus{border-color:rgba(var(--accent-rgb),.38)}
+  .cust-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+  .cust-actions .btn{height:40px;font-size:11.5px}
+  .cust-danger{width:100%;height:40px;margin-top:8px;border-radius:11px;border:1px solid rgba(255,59,71,.25);background:rgba(255,59,71,.07);color:#FF8A90;font-size:11.5px;font-weight:600}
+
+  .toast{z-index:100}
+
+  /* ---------- 2.1 comfort, context and designed surfaces ---------- */
+  .connectstatus{position:relative;overflow:hidden;padding-bottom:15px;border-color:rgba(255,255,255,.09);
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))}
+  .connectstatus::after{content:"";position:absolute;left:0;bottom:0;height:2px;width:36%;border-radius:99px;
+    background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent);
+    animation:connectSweep 1.35s var(--ease) infinite}
+  @keyframes connectSweep{0%{transform:translateX(-110%)}100%{transform:translateX(390%)}}
+
+  /* Now on TV */
+  .ctxbar{flex:none;display:flex;align-items:center;gap:7px;padding:7px 8px 7px 9px;border-radius:18px;
+    border:1px solid rgba(255,255,255,.08);
+    background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.018));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 8px 20px rgba(0,0,0,.16)}
+  .ctxnow{display:flex;align-items:center;gap:9px;min-width:0;flex:1;text-align:left;border-radius:12px;padding:1px;
+    transition:opacity .12s}
+  .ctxnow:active{opacity:.7}
+  .ctxlogo{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex:none;
+    color:var(--accent);border:1px solid rgba(var(--accent-rgb),.25);
+    background:radial-gradient(circle at 35% 30%,rgba(var(--accent-rgb),.24),rgba(var(--accent-rgb),.05))}
+  .ctxlogo .ic{width:17px;height:17px}
+  .ctxmeta{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+  .ctxx{font-size:8.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--dim2);font-weight:700}
+  .ctxmeta b{font-size:12.5px;font-weight:650;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:136px}
+  .ctxchev{width:13px;height:13px;color:var(--dim2);flex:none;margin-right:1px}
+  .ctxkeys{display:flex;gap:5px;flex:none}
+  .ctxkey{width:44px;height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    color:var(--dim);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.085);
+    transition:transform .1s var(--ease),background .12s,border-color .12s,color .12s}
+  .ctxkey .ic{width:17px;height:17px;stroke-width:2}
+  .ctxklabel{font-size:9px;line-height:1;letter-spacing:.01em;color:var(--dim);font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctxkey:active{transform:scale(.9);background:rgba(var(--accent-rgb),.18);border-color:rgba(var(--accent-rgb),.42);color:#fff}
+  .ctxkey:active .ctxklabel{color:var(--txt)}
+  .ctxkey.flash{background:rgba(var(--accent-rgb),.22);border-color:rgba(var(--accent-rgb),.5);color:#fff}
+
+  .media-rail{display:none;order:3}
+  .remote.volume-right .media-rail{order:1}
+  .remote.media-app .ch-rail{display:none}
+  .remote.media-app .media-rail{display:flex}
+  .remote.media-app .top-controls{grid-template-columns:72px minmax(0,1fr) 72px;gap:12px}
+  .remote.media-app .mid-controls{grid-column:2;flex-direction:column;justify-content:center;gap:13px;padding-right:0;padding-top:2px}
+  .remote.media-app.volume-right .top-controls{grid-template-columns:72px minmax(0,1fr) 72px}
+  .remote.media-app.volume-right .mid-controls{grid-column:2}
+  .rail-play{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:#fff;
+    background:linear-gradient(180deg,#FF5963,#DA1B27);border:1px solid rgba(255,255,255,.18);
+    box-shadow:0 0 calc(24px * var(--glow)) rgba(var(--accent-rgb),.32),inset 0 1px 0 rgba(255,255,255,.18);
+    transition:transform .1s var(--ease),filter .12s}
+  .rail-play .ic{width:22px;height:22px;fill:currentColor;stroke-width:0;margin-left:2px}
+  .rail-play:active{transform:scale(.9);filter:brightness(1.08)}
+
+  /* rails read like a real level meter */
+  .rail-readout{font-size:15px}
+  .rail-label,.circle-label{font-size:11.5px;color:#A3AAB8}
+
+  /* Comfort rows in Settings */
+  .setcard{padding:2px 14px}
+  .setrow{display:flex;align-items:center;gap:11px;width:100%;min-height:62px;padding:12px 0;text-align:left;
+    border-bottom:1px solid rgba(255,255,255,.05)}
+  .setrow:last-child{border-bottom:0}
+  .setrow .toggle{pointer-events:none}
+  .seticon{width:37px;height:37px;border-radius:12px;display:grid;place-items:center;flex:none;color:var(--accent);
+    background:rgba(var(--accent-rgb),.075);border:1px solid rgba(var(--accent-rgb),.15)}
+  .seticon .ic{width:18px;height:18px}
+  .setmeta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .setmeta b{font-size:12.5px;font-weight:600;line-height:1.3}
+  .setmeta span{font-size:10.5px;line-height:1.4;color:var(--dim2)}
+  .setrow:active .seticon{background:rgba(var(--accent-rgb),.16);border-color:rgba(var(--accent-rgb),.3)}
+
+  /* dialogs */
+  .modal{padding:12px 12px calc(12px + env(safe-area-inset-bottom))}
+  .modal-card{padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:26px;
+    background:
+      radial-gradient(110% 52% at 50% 0%,rgba(var(--accent-rgb),.10),transparent 58%),
+      linear-gradient(180deg,#171A21,#080A0E);
+    border-color:rgba(255,255,255,.11);
+    box-shadow:0 34px 90px rgba(0,0,0,.8),0 0 0 1px rgba(var(--accent-rgb),.05),inset 0 1px 0 rgba(255,255,255,.07);
+    animation:modalIn .22s var(--ease)}
+  .modal-card::before{content:"";position:absolute;left:50%;top:7px;width:34px;height:3px;border-radius:99px;
+    background:rgba(255,255,255,.15);transform:translateX(-50%);pointer-events:none}
+  @keyframes modalIn{from{transform:translateY(22px) scale(.985);opacity:0}to{transform:none;opacity:1}}
+  .modal-head{align-items:flex-start;margin:6px 0 9px}
+  .modal-title{display:flex;align-items:center;gap:11px;min-width:0;flex:1}
+  .modal-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;flex:none;color:var(--accent);
+    background:rgba(var(--accent-rgb),.10);border:1px solid rgba(var(--accent-rgb),.22)}
+  .modal-icon .ic{width:20px;height:20px}
+  .modal-kicker{display:block;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim2);
+    font-weight:700;margin-bottom:2px}
+  .modal-head h3{font-size:19px;line-height:1.2;letter-spacing:-.02em}
+  .modal-head .ghostbtn{width:34px;height:34px;border-radius:11px;margin-top:2px}
+  .modal-intro{font-size:12px;line-height:1.55;color:var(--dim);margin:0 0 14px}
+  .modal-label{font-size:11.5px;color:var(--dim);margin:13px 0 6px;font-weight:500}
+  .modal-card input,.modal-card select{height:46px;border-radius:12px;font-size:14px;padding:0 13px;
+    background:#07090D;border-color:rgba(255,255,255,.10)}
+  .modal-card select{appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2398A0B0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-position:right 11px center;background-repeat:no-repeat;background-size:15px;padding-right:34px}
+  .modal-card input:focus,.modal-card select:focus{border-color:rgba(var(--accent-rgb),.52);
+    box-shadow:0 0 0 3px rgba(var(--accent-rgb),.10)}
+  .modal-actions{position:sticky;bottom:calc(-18px - env(safe-area-inset-bottom));
+    margin:18px -18px calc(-18px - env(safe-area-inset-bottom));
+    padding:12px 18px calc(14px + env(safe-area-inset-bottom));gap:8px;
+    background:linear-gradient(180deg,rgba(8,10,14,0),#080A0E 34%);
+    border-top:1px solid rgba(255,255,255,.055)}
+  .modal-actions .btn{height:46px;font-size:13px;padding:0 16px;border-radius:13px;flex:1 1 0;min-width:0}
+  .modal-actions .btn.primary{flex:1.3 1 0}
+  .checkinline{padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.025);
+    margin-top:14px;font-size:12.5px;min-height:46px}
+  .modal-card .checkinline input[type="checkbox"]{width:22px;height:22px;min-width:22px;border-radius:7px}
+  .icon-select-row .icon-preview{width:46px;height:46px;border-radius:12px}
+  .pair-card{max-width:440px}
+  .pair-lede{font-size:12.5px;line-height:1.6}
+  .pair-hostline{font-size:11px;margin-top:9px}
+  .pair-code{height:62px!important;font-size:28px!important;border-color:rgba(var(--accent-rgb),.35)!important}
+  .pair-status{font-size:11.5px;min-height:19px}
+  .macro-help{font-size:11.5px;line-height:1.55;margin:8px 0 10px}
+  .step-row{padding:8px;border-radius:12px;gap:7px}
+  .step-type{font-size:9.5px;width:35px}
+  .step-fields select,.step-fields input{height:38px;font-size:12.5px;border-radius:9px}
+  .step-actions .iconbtn{width:30px;height:30px;border-radius:8px}
+  .step-add-row .btn{height:38px;font-size:11.5px}
+  .modal-actions .btn.flat{flex:.7 1 0}
+
+  .pairsteps{display:flex;align-items:center;margin:1px 0 14px;padding:0 3px}
+  .pstep{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;min-width:44px;color:var(--dim2)}
+  .pstep i{width:23px;height:23px;border-radius:50%;display:grid;place-items:center;font-style:normal;
+    font-size:10px;font-weight:700;background:#141821;border:1px solid rgba(255,255,255,.12);color:var(--dim2)}
+  .pstep b{font-size:9.5px;font-weight:600;letter-spacing:.04em}
+  .pstep.on i{background:var(--accent);border-color:var(--accent);color:#fff;
+    box-shadow:0 0 16px rgba(var(--accent-rgb),.42)}
+  .pstep.on b{color:var(--txt)}
+  .pstep.done i{background:rgba(46,213,115,.14);border-color:rgba(46,213,115,.44);color:var(--green)}
+  .pstep.error i{background:rgba(255,59,71,.18);border-color:rgba(255,59,71,.55);color:#FF9AA0}
+  .pline{flex:1;height:1px;background:rgba(255,255,255,.12);margin:0 7px 16px}
+
+  /* bottom sheet */
+  .sheet-card{border-radius:28px 28px 0 0;padding:11px 18px calc(22px + env(safe-area-inset-bottom));
+    background:radial-gradient(100% 42% at 50% 0%,rgba(var(--accent-rgb),.07),transparent 60%),linear-gradient(180deg,#151920,#090B0F)}
+  .sheet-title{font-size:17px;letter-spacing:-.01em;margin-bottom:12px}
+  .more-item{height:58px;border-radius:16px;font-size:13px;background:rgba(255,255,255,.04)}
+  .more-item .ic{width:20px;height:20px;color:var(--accent)}
+  .sheet-note{font-size:11px;line-height:1.55}
+
+  /* all-ages mode */
+  body.easy .tab{padding-left:16px;padding-right:16px}
+  body.easy .ctxbar{padding:8px 9px;border-radius:19px}
+  body.easy .ctxlogo{width:38px;height:38px;border-radius:12px}
+  body.easy .ctxmeta b{font-size:14px;max-width:124px}
+  body.easy .ctxx{font-size:9px}
+  body.easy .ctxkey{width:48px;height:48px;border-radius:13px}
+  body.easy .ctxkey .ic{width:19px;height:19px}
+  body.easy .ctxklabel{font-size:10.5px;color:var(--dim)}
+  body.easy .top-controls{grid-template-columns:78px minmax(0,1fr) 78px;gap:10px}
+  body.easy .rail{width:76px;height:198px;border-radius:36px}
+  body.easy .rail-btn{width:54px;height:54px}
+  body.easy .rail-btn .ic{width:26px;height:26px}
+  body.easy .circle-control{width:78px;height:78px}
+  body.easy .circle-control .ic{width:31px;height:31px}
+  body.easy .rail-label,body.easy .circle-label{font-size:12.5px;color:var(--txt)}
+  body.easy .rail-readout{font-size:17px}
+  body.easy .rail-play{width:60px;height:60px}
+  body.easy .rail-play .ic{width:25px;height:25px}
+  body.easy .action-tile{height:82px;font-size:12.5px;border-radius:17px}
+  body.easy .action-tile .ic{width:26px;height:26px}
+  body.easy .home-float{width:68px;height:68px;font-size:11px}
+  body.easy .home-float .ic{width:25px;height:25px}
+  body.easy .remote .seg .ic{width:30px;height:30px}
+  body.easy .remote .padok{font-size:18px}
+  body.easy .remote.media-app .top-controls{grid-template-columns:78px minmax(0,1fr) 78px}
+  body.easy .remote.media-app.volume-right .top-controls{grid-template-columns:78px minmax(0,1fr) 78px}
+  body.easy .setrow{min-height:70px;padding:14px 0}
+  body.easy .setmeta b{font-size:13.5px}
+  body.easy .setmeta span{font-size:11.5px}
+  body.easy .seticon{width:42px;height:42px}
+  body.easy .modal-head h3{font-size:21px}
+  body.easy .modal-intro,body.easy .pair-lede{font-size:13px}
+  body.easy .modal-card input,body.easy .modal-card select{height:50px;font-size:15px}
+  body.easy .modal-actions .btn{height:50px;font-size:14px}
+  body.easy .more-item{height:64px;font-size:13.5px}
+  body.easy .appcard{height:72px;font-size:13.5px}
+  body.easy .appcard .app-ic{width:52px;height:52px;border-radius:14px}
+  body.easy .appcard .app-ic svg{width:36px;height:36px}
+  body.easy .numbtn{height:70px;font-size:23px}
+  body.easy .h1{font-size:24px}
+  body.easy .lede{font-size:13.5px}
+  body.easy .btn{height:50px;font-size:14px}
+  body.easy .toggle{transform:scale(1.08)}
+
+  /* keyboard and focus */
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+    outline:2px solid rgba(var(--accent-rgb),.72);outline-offset:2px}
+  .touch-target{min-width:44px;min-height:44px}
+
+  body.reduce-motion *,body.reduce-motion *::before,body.reduce-motion *::after{
+    animation:none!important;transition:none!important}
+
+  @media (max-height:730px){
+    .rail{height:156px}
+    .rail-btn{width:42px;height:42px}
+    .circle-control{width:58px;height:58px}
+    .action-tile{height:62px}
+    .padwrap{width:min(72vw,var(--pad-max,300px))}
+    .home-float{width:54px;height:54px}
+    .top-controls{gap:10px}
+    .remote{gap:7px}
+    .ctxbar{padding:5px 7px;border-radius:15px}
+    .ctxlogo{width:30px;height:30px;border-radius:10px}
+    .ctxlogo .ic{width:15px;height:15px}
+    .ctxkey{width:34px;height:34px;border-radius:10px}
+    .ctxkey .ic{width:16px;height:16px}
+    .ctxklabel{font-size:7px}
+    .ctxmeta b{font-size:12px}
+    .ctxx{font-size:8px}
+    .rail-play{width:46px;height:46px}
+    body.easy .rail{height:160px}
+    body.easy .rail-btn{width:46px;height:46px}
+    body.easy .circle-control{width:64px;height:64px}
+    body.easy .action-tile{height:68px}
+    body.easy .home-float{width:58px;height:58px}
+    body.easy .rail-play{width:50px;height:50px}
+  }
+  @media (max-width:370px){
+    #tab-remote{padding-left:14px;padding-right:14px}
+    .top-controls{grid-template-columns:64px minmax(0,1fr) 64px;gap:8px}
+    .rail{width:60px}
+    .rail-btn{width:42px;height:42px}
+    .circle-control{width:58px;height:58px}
+    .home-float{width:58px;height:58px}
+    .padwrap{width:min(86vw,var(--pad-max,330px))}
+    .action-tile{min-width:82px}
+    .gesture-row select{max-width:138px}
+    .ctxkeys{gap:4px}
+    .ctxkey{width:40px;height:42px}
+    .ctxklabel{font-size:8px}
+    .ctxmeta b{max-width:98px}
+    .ctxchev{display:none}
+    body.easy .top-controls{grid-template-columns:68px minmax(0,1fr) 68px}
+    body.easy .rail{width:66px}
+    body.easy .remote.media-app .top-controls{grid-template-columns:68px minmax(0,1fr) 68px}
+    body.easy .remote.media-app.volume-right .top-controls{grid-template-columns:68px minmax(0,1fr) 68px}
+    body.easy .ctxkey{width:44px;height:44px}
+  }
+
   @media (prefers-reduced-motion:reduce){
     *{animation:none!important;transition:none!important}
+  }
+
+  /* The remote is drawn on a 390 x 844 stage. Scale that stage to the device
+     viewport so tall screens or a changed display density don't stretch the
+     controls apart. Width changes recompute the scale; keyboard height changes
+     are ignored so typing doesn't shrink the whole remote. */
+  body{display:flex;justify-content:center;align-items:flex-start;background:var(--bg)}
+  .shell{
+    width:390px;height:844px;flex:none;overflow:hidden;
+    transform:scale(var(--app-scale,1));transform-origin:top center;
+    will-change:transform;
   }
 </style>
 </head>
@@ -302,17 +862,23 @@
 
 <div class="shell">
   <header class="hdr">
-    <div class="brandmark"><svg class="ic"><use href="#i-circle-dot"/></svg></div>
-    <div class="brandtxt">
-      <div class="brandname">Xstream</div>
-      <div class="brandsub" id="hdrSub">Remote</div>
-    </div>
-    <div class="statuspill" id="statusPill">
-      <span class="pulse"></span><span id="statusText">Offline</span>
-    </div>
-    <button class="ghostbtn" id="btnGoConnect" aria-label="Connection">
-      <svg class="ic"><use href="#i-wifi"/></svg>
+    <button class="ghostbtn hdr-gear" id="btnSettings" aria-label="Settings">
+      <svg class="ic"><use href="#i-settings"/></svg>
     </button>
+    <div class="brandtxt">
+      <div class="brandname"><svg class="ic brand-orb"><use href="#i-circle-dot"/></svg>Xstream</div>
+      <div class="statuspill" id="statusPill">
+        <span class="pulse"></span><span id="statusText">Offline</span>
+      </div>
+    </div>
+    <div class="hdr-actions">
+      <button class="ghostbtn" id="btnMore" aria-label="More controls">
+        <svg class="ic"><use href="#i-more-horizontal"/></svg>
+      </button>
+      <button class="ghostbtn wifi" id="btnGoConnect" aria-label="Connection">
+        <svg class="ic"><use href="#i-wifi"/></svg><span class="wifi-dot"></span>
+      </button>
+    </div>
   </header>
 
   <!-- ================= connect ================= -->
@@ -322,7 +888,7 @@
       <div class="radar-core"><svg class="ic big"><use href="#i-tv"/></svg></div>
     </div>
     <h1 class="h1">Find your box</h1>
-    <p class="lede">Stay on the same Wi-Fi as the Xstream box. Discovery uses mDNS plus a quick port sweep.</p>
+    <p class="lede">Stay on the same Wi-Fi as the Xstream box. You'll pair once with the code shown on your TV.</p>
 
     <div class="connectstatus" id="connectStatus" hidden>
       <span class="spinner"></span><span id="connectStatusText">Connecting…</span>
@@ -334,8 +900,9 @@
     <div class="errbox" id="errCard" hidden>
       <div class="top"><svg class="ic"><use href="#i-alert-circle"/></svg><span id="errText"></span></div>
       <div class="help" id="errHelp" hidden>
-        The box only accepts remotes it has paired with. Re-pair this client from the laptop bridge,
-        then rebuild the APK with the fresh <b>client.pem</b> and <b>client.key</b>.
+        This phone isn't paired with this box yet. Tap Pair this phone, then enter the
+        6-character code shown on the TV.
+        <button class="btn primary errpair" id="btnPairNow">Pair this phone</button>
       </div>
     </div>
 
@@ -356,7 +923,7 @@
 
     <div class="note">
       <svg class="ic"><use href="#i-shield-check"/></svg>
-      <p>Direct TLS to port 6466 with a paired client certificate. No cloud, no account, nothing leaves your LAN.</p>
+      <p>Pair once from this phone. Every install gets its own key, and the TV certificate is pinned after pairing. No cloud, no account, nothing leaves your LAN.</p>
     </div>
   </section>
 
@@ -367,65 +934,127 @@
     </div>
 
     <!-- remote -->
-    <section class="tab" id="tab-remote">
-      <div class="devicechips">
-        <span class="chip"><svg class="ic"><use href="#i-wifi"/></svg><span id="chipDeviceText">Xstream</span></span>
-        <span class="chip dim"><svg class="ic"><use href="#i-circle-play"/></svg><span id="chipAppText">—</span></span>
-        <span class="chip dim"><svg class="ic"><use href="#i-activity"/></svg><span id="chipRttText">—</span></span>
+    <section class="tab remote" id="tab-remote">
+      <div class="ctxbar" id="ctxBar">
+        <button class="ctxnow" id="ctxNow" aria-label="Open apps on the box">
+          <span class="ctxlogo" id="ctxLogo"><svg class="ic"><use href="#i-tv"/></svg></span>
+          <span class="ctxmeta">
+            <span class="ctxx">Now on TV</span>
+            <b id="ctxAppName">Live TV</b>
+          </span>
+          <svg class="ic ctxchev"><use href="#i-chevron-right"/></svg>
+        </button>
+        <div class="ctxkeys" id="ctxKeys"></div>
+      </div>
+
+      <div class="top-controls" id="topControls">
+        <div class="rail-wrap vol-rail">
+          <div class="rail">
+            <button class="rail-btn" data-key="VOLUME_UP" data-repeat="1" aria-label="Volume up">
+              <svg class="ic"><use href="#i-plus"/></svg>
+            </button>
+            <div class="rail-mid">
+              <div class="rail-ico"><svg class="ic" id="railVolIcon"><use href="#i-volume-2"/></svg></div>
+              <div class="rail-readout" id="volNum">—</div>
+            </div>
+            <button class="rail-btn" data-key="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">
+              <svg class="ic"><use href="#i-minus"/></svg>
+            </button>
+          </div>
+          <span class="rail-label">Volume</span>
+        </div>
+
+        <div class="mid-controls">
+          <div class="circle-wrap">
+            <button class="circle-control" id="btnMute" aria-label="Mute">
+              <svg class="ic" id="muteIcon"><use href="#i-volume-x"/></svg>
+            </button>
+            <span class="circle-label" id="muteLabel">Mute</span>
+          </div>
+          <div class="circle-wrap">
+            <button class="circle-control" data-key="BACK" aria-label="Back">
+              <svg class="ic"><use href="#i-arrow-left"/></svg>
+            </button>
+            <span class="circle-label">Back</span>
+          </div>
+        </div>
+
+        <div class="rail-wrap ch-rail">
+          <div class="rail">
+            <button class="rail-btn" data-key="CHANNEL_UP" data-repeat="1" aria-label="Channel up">
+              <svg class="ic"><use href="#i-plus"/></svg>
+            </button>
+            <div class="rail-mid">
+              <div class="rail-ico"><svg class="ic"><use href="#i-tv"/></svg></div>
+              <div class="rail-readout">CH</div>
+            </div>
+            <button class="rail-btn" data-key="CHANNEL_DOWN" data-repeat="1" aria-label="Channel down">
+              <svg class="ic"><use href="#i-minus"/></svg>
+            </button>
+          </div>
+          <span class="rail-label">Channel</span>
+        </div>
+
+        <div class="rail-wrap media-rail">
+          <div class="rail media-rail-shell">
+            <button class="rail-btn" data-key="REWIND" aria-label="Rewind">
+              <svg class="ic"><use href="#i-rewind"/></svg>
+            </button>
+            <button class="rail-play" data-key="PLAY_PAUSE" aria-label="Play or pause">
+              <svg class="ic"><use href="#i-play"/></svg>
+            </button>
+            <button class="rail-btn" data-key="FAST_FORWARD" aria-label="Forward">
+              <svg class="ic"><use href="#i-fast-forward"/></svg>
+            </button>
+          </div>
+          <span class="rail-label">Playback</span>
+        </div>
+      </div>
+
+      <div class="action-wrap">
+        <div class="action-row" id="tileRow"></div>
       </div>
 
       <div class="padzone">
-        <div class="pad" id="pad">
-          <span class="seg up" data-dir="UP"><svg class="ic"><use href="#i-chevron-up"/></svg></span>
-          <span class="seg down" data-dir="DOWN"><svg class="ic"><use href="#i-chevron-down"/></svg></span>
-          <span class="seg left" data-dir="LEFT"><svg class="ic"><use href="#i-chevron-left"/></svg></span>
-          <span class="seg right" data-dir="RIGHT"><svg class="ic"><use href="#i-chevron-right"/></svg></span>
-          <span class="padok" id="okBtn">OK</span>
+        <div class="padwrap">
+          <div class="pad" id="pad">
+            <span class="pad-cross" aria-hidden="true"></span>
+            <span class="seg up" data-dir="UP"><svg class="ic"><use href="#i-chevron-up"/></svg></span>
+            <span class="seg down" data-dir="DOWN"><svg class="ic"><use href="#i-chevron-down"/></svg></span>
+            <span class="seg left" data-dir="LEFT"><svg class="ic"><use href="#i-chevron-left"/></svg></span>
+            <span class="seg right" data-dir="RIGHT"><svg class="ic"><use href="#i-chevron-right"/></svg></span>
+            <span class="padok" id="okBtn">OK</span>
+          </div>
+          <button class="home-float" data-key="HOME" aria-label="Home">
+            <svg class="ic"><use href="#i-home"/></svg><span>Home</span>
+          </button>
         </div>
       </div>
-
-      <div class="row3">
-        <button class="pill" data-key="BACK"><svg class="ic"><use href="#i-arrow-left"/></svg><span>Back</span></button>
-        <button class="pill" data-key="HOME"><svg class="ic"><use href="#i-home"/></svg><span>Home</span></button>
-        <button class="pill" data-key="MENU"><svg class="ic"><use href="#i-menu"/></svg><span>Menu</span></button>
-      </div>
-
-      <div class="volcard">
-        <button class="round" id="btnMute" aria-label="Mute">
-          <svg class="ic" id="muteIcon"><use href="#i-volume-1"/></svg>
-        </button>
-        <div class="volmid">
-          <div class="volline"><span>Volume</span><b id="volNum">—</b></div>
-          <div class="track"><i id="volFill"></i></div>
-        </div>
-        <div class="volbtns">
-          <button class="round" data-key="VOLUME_DOWN" data-repeat="1" aria-label="Volume down">−</button>
-          <button class="round" data-key="VOLUME_UP" data-repeat="1" aria-label="Volume up">+</button>
-        </div>
-      </div>
-
-      <div class="powerrow">
-        <button class="power" data-key="POWER"><svg class="ic"><use href="#i-power"/></svg><span>Power</span></button>
-        <button class="keytile" data-key="TV"><svg class="ic"><use href="#i-tv"/></svg><span>Live TV</span></button>
-        <button class="keytile" data-key="GUIDE"><svg class="ic"><use href="#i-list-video"/></svg><span>Guide</span></button>
-      </div>
-
-      <div class="approw" id="appRow"></div>
     </section>
 
     <!-- keys -->
     <section class="tab" id="tab-keys" hidden>
-      <h2 class="h2" style="margin-top:10px">Every key</h2>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Every key</h2><span>Tap to send</span></div>
+      </div>
       <div class="grid" id="keyGrid"></div>
       <div class="note">
         <svg class="ic"><use href="#i-info"/></svg>
-        <p>This Airtel build treats several system keys as no-ops. Guide, Info and Settings may do nothing depending on what’s on screen.</p>
+        <p>These are the box’s standard Android TV keys. Apps choose which ones they respond to, so Menu is the best fallback when a system key does nothing.</p>
       </div>
     </section>
 
     <!-- keyboard -->
     <section class="tab" id="tab-keyboard" hidden>
-      <h2 class="h2" style="margin-top:10px">Type on the box</h2>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Type on the box</h2><span>Send text to the TV</span></div>
+      </div>
       <p class="lede" style="text-align:left;max-width:none;margin-bottom:12px">
         Focus a search or email field on the TV first, then send.
       </p>
@@ -448,7 +1077,36 @@
 
     <!-- settings -->
     <section class="tab settings" id="tab-settings" hidden>
-      <h2 class="h2" style="margin-top:10px">This session</h2>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Settings</h2><span>Connection and identity</span></div>
+      </div>
+      <button class="btn primary" id="btnCustomize" style="margin-top:2px">
+        <svg class="ic"><use href="#i-sliders-horizontal"/></svg><span>Customize remote</span>
+      </button>
+
+      <h2 class="h2">Comfort</h2>
+      <div class="card setcard">
+        <button class="setrow" id="setEasy" aria-pressed="false">
+          <span class="seticon"><svg class="ic"><use href="#i-maximize"/></svg></span>
+          <span class="setmeta"><b>Larger, simpler controls</b><span>Bigger buttons and always-on labels</span></span>
+          <span class="toggle" id="setEasyToggle"><span></span></span>
+        </button>
+        <button class="setrow" id="setHaptics" aria-pressed="true">
+          <span class="seticon"><svg class="ic"><use href="#i-activity"/></svg></span>
+          <span class="setmeta"><b>Touch feedback</b><span>A small tap when you press a key</span></span>
+          <span class="toggle on" id="setHapticsToggle"><span></span></span>
+        </button>
+        <button class="setrow" id="setMotion" aria-pressed="true">
+          <span class="seticon"><svg class="ic"><use href="#i-sun"/></svg></span>
+          <span class="setmeta"><b>Motion effects</b><span>Ripples, glows and transitions</span></span>
+          <span class="toggle on" id="setMotionToggle"><span></span></span>
+        </button>
+      </div>
+
+      <h2 class="h2">This session</h2>
       <div class="card">
         <div class="kv"><span>Status</span><b id="setStatus">—</b></div>
         <div class="kv"><span>Address</span><b id="setHost">—</b></div>
@@ -466,13 +1124,17 @@
         </button>
       </div>
 
-      <h2 class="h2">Certificates</h2>
+      <h2 class="h2">Pairing</h2>
       <div class="card">
-        <div class="kv"><span>Client</span><b>client.pem</b></div>
-        <div class="mono" id="setCertFp">—</div>
-        <div class="kv"><span>Box</span><b id="setPeerName">—</b></div>
-        <div class="mono" id="setPeerFp">—</div>
+        <div class="kv"><span>Status</span><b id="setPairing">Not paired</b></div>
+        <div class="kv"><span>This phone</span><b>Per-install key</b></div>
+        <div class="mono" id="setCertFp">Generated on first pair</div>
+        <div class="kv"><span>Box certificate</span><b id="setPeerName">-</b></div>
+        <div class="mono" id="setPeerFp">-</div>
       </div>
+      <button class="btn" id="btnPairAgain">
+        <svg class="ic"><use href="#i-fingerprint"/></svg><span>Pair / re-pair this box</span>
+      </button>
 
       <h2 class="h2">About</h2>
       <div class="card">
@@ -486,7 +1148,7 @@
         </div>
         <div class="aboutrow">
           <svg class="ic"><use href="#i-smartphone"/></svg>
-          <div><b>Xstream Remote 1.0</b><span>Standalone Java client · no cloud</span></div>
+          <div><b>Xstream Remote 2.0</b><span>Standalone Java client · no cloud</span></div>
         </div>
       </div>
 
@@ -496,18 +1158,218 @@
       <div style="height:8px"></div>
     </section>
 
-    <nav class="tabs" id="tabs">
-      <button data-tab="remote" class="on"><svg class="ic"><use href="#i-gamepad-2"/></svg><span>Remote</span></button>
-      <button data-tab="keys"><svg class="ic"><use href="#i-layout-grid"/></svg><span>Keys</span></button>
-      <button data-tab="keyboard"><svg class="ic"><use href="#i-keyboard"/></svg><span>Keyboard</span></button>
-      <button data-tab="settings"><svg class="ic"><use href="#i-settings"/></svg><span>Settings</span></button>
-    </nav>
+    <!-- apps -->
+    <section class="tab" id="tab-apps" hidden>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Apps</h2><span>Launch on the box</span></div>
+      </div>
+      <div class="appgrid" id="appGrid"></div>
+      <div class="note">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <p>These are deep links. If an app is installed on the TV, the box opens it; otherwise the TV may show the store or a browser.</p>
+      </div>
+    </section>
+
+    <!-- numbers -->
+    <section class="tab" id="tab-numbers" hidden>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Numbers</h2><span>Channel input</span></div>
+      </div>
+      <div class="numpad" id="numPad">
+        <button class="numbtn" data-key="NUM_1">1</button>
+        <button class="numbtn" data-key="NUM_2">2</button>
+        <button class="numbtn" data-key="NUM_3">3</button>
+        <button class="numbtn" data-key="NUM_4">4</button>
+        <button class="numbtn" data-key="NUM_5">5</button>
+        <button class="numbtn" data-key="NUM_6">6</button>
+        <button class="numbtn" data-key="NUM_7">7</button>
+        <button class="numbtn" data-key="NUM_8">8</button>
+        <button class="numbtn" data-key="NUM_9">9</button>
+        <button class="numbtn small" data-key="DEL" aria-label="Delete"><svg class="ic"><use href="#i-delete"/></svg></button>
+        <button class="numbtn" data-key="NUM_0">0</button>
+        <button class="numbtn small" data-key="CENTER">OK</button>
+      </div>
+      <div class="note">
+        <svg class="ic"><use href="#i-info"/></svg>
+        <p>Use the numbers when a channel or PIN field is open on the TV. The number keys are mapped directly to Android TV key codes.</p>
+      </div>
+    </section>
+
+    <!-- customize -->
+    <section class="tab" id="tab-customize" hidden>
+      <div class="panel-head">
+        <button class="ghostbtn" data-panel-back aria-label="Back to remote">
+          <svg class="ic"><use href="#i-arrow-left"/></svg>
+        </button>
+        <div><h2>Customize</h2><span>Buttons, macros and feel</span></div>
+        <button class="ghostbtn" id="btnCustomDone" aria-label="Done">
+          <svg class="ic"><use href="#i-check"/></svg>
+        </button>
+      </div>
+      <div id="customizeBody"></div>
+    </section>
   </main>
 </div>
 
-<div class="hud" id="volHud">
-  <svg class="ic" id="hudIcon"><use href="#i-volume-2"/></svg><b id="volHudNum">—</b>
+<!-- more controls -->
+<div class="sheet" id="moreSheet" hidden>
+  <div class="sheet-scrim" data-close-sheet></div>
+  <div class="sheet-card">
+    <div class="sheet-grip"></div>
+    <div class="sheet-title">
+      <span>More controls</span>
+      <button class="ghostbtn" data-close-sheet aria-label="Close">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="more-grid">
+      <button class="more-item" data-open-panel="keys">
+        <svg class="ic"><use href="#i-layout-grid"/></svg><span>All keys</span>
+      </button>
+      <button class="more-item" data-open-panel="keyboard">
+        <svg class="ic"><use href="#i-keyboard"/></svg><span>Keyboard</span>
+      </button>
+      <button class="more-item" data-open-panel="apps">
+        <svg class="ic"><use href="#i-circle-play"/></svg><span>Apps</span>
+      </button>
+      <button class="more-item" data-open-panel="numbers">
+        <svg class="ic"><use href="#i-key-round"/></svg><span>Numbers</span>
+      </button>
+      <button class="more-item" data-open-panel="customize">
+        <svg class="ic"><use href="#i-sliders-horizontal"/></svg><span>Customize</span>
+      </button>
+      <button class="more-item" data-open-panel="settings">
+        <svg class="ic"><use href="#i-settings"/></svg><span>Settings</span>
+      </button>
+    </div>
+    <div class="sheet-note" id="sheetHint">Long-press the pad for Menu · two fingers slide for volume.</div>
+  </div>
 </div>
+
+<!-- button editor -->
+<div class="modal" id="tileModal" hidden>
+  <div class="modal-scrim" data-close-modal></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="modal-icon"><svg class="ic"><use href="#i-pencil"/></svg></span>
+        <div><span class="modal-kicker">Shortcut</span><h3 id="tileModalTitle">Button</h3></div>
+      </div>
+      <button class="ghostbtn" data-close-modal aria-label="Close">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <p class="modal-intro">Choose what this button does. You can change it any time.</p>
+    <label class="modal-label" for="tileLabel">Label</label>
+    <input id="tileLabel" maxlength="24" placeholder="Movie night">
+    <label class="modal-label" for="tileIcon">Icon</label>
+    <div class="icon-select-row">
+      <span class="icon-preview" id="tileIconPreview"><svg class="ic"><use href="#i-star"/></svg></span>
+      <select id="tileIcon"></select>
+    </div>
+    <label class="modal-label" for="tileType">Action</label>
+    <select id="tileType">
+      <option value="key">Send a key</option>
+      <option value="macro">Run a macro</option>
+      <option value="launch">Open an app link</option>
+      <option value="text">Send text</option>
+    </select>
+    <div id="tileKeyWrap">
+      <label class="modal-label" for="tileKey">Key</label>
+      <select id="tileKey"></select>
+    </div>
+    <div id="tileMacroWrap">
+      <label class="modal-label" for="tileMacro">Macro</label>
+      <select id="tileMacro"></select>
+    </div>
+    <div id="tileUriWrap">
+      <label class="modal-label" for="tileUri">App link</label>
+      <input id="tileUri" placeholder="https://www.youtube.com/tv">
+    </div>
+    <div id="tileTextWrap">
+      <label class="modal-label" for="tileText">Text</label>
+      <input id="tileText" placeholder="Search query">
+    </div>
+    <label class="checkinline"><input type="checkbox" id="tileAccent"> Use accent fill</label>
+    <div class="modal-actions">
+      <button class="btn" data-close-modal>Cancel</button>
+      <button class="btn primary" id="tileSave">Save button</button>
+    </div>
+  </div>
+</div>
+
+<!-- macro editor -->
+<div class="modal" id="macroModal" hidden>
+  <div class="modal-scrim" data-close-modal></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="modal-icon"><svg class="ic"><use href="#i-star"/></svg></span>
+        <div><span class="modal-kicker">Macro</span><h3 id="macroModalTitle">Macro</h3></div>
+      </div>
+      <button class="ghostbtn" data-close-modal aria-label="Close">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <p class="modal-intro">Build a sequence that runs with one tap.</p>
+    <label class="modal-label" for="macroName">Name</label>
+    <input id="macroName" maxlength="40" placeholder="Movie night">
+    <div class="macro-help">Steps run in order. Add a wait between launching an app and pressing keys.</div>
+    <div id="macroSteps"></div>
+    <div class="step-add-row">
+      <button class="btn" id="macroAddKey">+ Key</button>
+      <button class="btn" id="macroAddApp">+ App</button>
+      <button class="btn" id="macroAddWait">+ Wait</button>
+      <button class="btn" id="macroAddText">+ Text</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="macroTest">Test</button>
+      <button class="btn" data-close-modal>Cancel</button>
+      <button class="btn primary" id="macroSave">Save macro</button>
+    </div>
+  </div>
+</div>
+
+<!-- TV-code pairing -->
+<div class="modal" id="pairModal" hidden>
+  <div class="modal-scrim" data-close-pair></div>
+  <div class="modal-card pair-card">
+    <div class="modal-head">
+      <div class="modal-title">
+        <span class="modal-icon"><svg class="ic"><use href="#i-fingerprint"/></svg></span>
+        <div><span class="modal-kicker">Secure pairing</span><h3>Pair this phone</h3></div>
+      </div>
+      <button class="ghostbtn" data-close-pair aria-label="Cancel pairing">
+        <svg class="ic"><use href="#i-x"/></svg>
+      </button>
+    </div>
+    <div class="pairsteps" aria-hidden="true">
+      <span class="pstep on" id="pairStepStart"><i>1</i><b>Start</b></span>
+      <span class="pline"></span>
+      <span class="pstep" id="pairStepCode"><i>2</i><b>Code</b></span>
+      <span class="pline"></span>
+      <span class="pstep" id="pairStepDone"><i>3</i><b>Done</b></span>
+    </div>
+    <p class="pair-lede">Your Xstream box will show a 6-character code. Keep this screen open and type the code below.</p>
+    <div class="pair-hostline">Box <b id="pairHost">-</b></div>
+    <label class="modal-label" for="pairCode">Code on the TV</label>
+    <input id="pairCode" class="pair-code" maxlength="6" inputmode="text"
+           placeholder="1A2B3C" autocomplete="off" spellcheck="false"
+           autocapitalize="characters" aria-describedby="pairStatus">
+    <div class="pair-status" id="pairStatus" role="status" aria-live="polite">Starting pairing...</div>
+    <div class="modal-actions">
+      <button class="btn" id="pairCancel">Cancel</button>
+      <button class="btn primary" id="pairSubmit" disabled>Pair</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -521,20 +1383,352 @@
 
   var state = {
     status: 'idle', host: '', model: '', vendor: '', sw: '', app: '',
-    level: -1, max: -1, muted: false, rtt: 0, cert: '', peer: '', error: '', kind: ''
+    level: -1, max: -1, muted: false, rtt: 0, cert: '', peer: '',
+    paired: false, error: '', kind: ''
   };
 
   var currentTab = 'remote';
   var seen = {};
-  var hudTimer = 0, toastTimer = 0, startedOnce = false;
+  var toastTimer = 0, startedOnce = false;
+
+  /* ---------- config-driven remote ---------- */
+  var CONFIG_KEY = 'xstream.config.v2';
+  var ICON_OPTIONS = [
+    'power', 'tv', 'list-video', 'home', 'arrow-left', 'menu', 'play', 'pause', 'stop',
+    'skip-forward', 'skip-back', 'rewind', 'fast-forward', 'volume-2', 'volume-1', 'volume-off', 'volume-x',
+    'settings', 'search', 'keyboard', 'layout-grid', 'monitor', 'cast', 'radio', 'star',
+    'circle-play', 'circle-dot', 'info', 'subtitles', 'plug', 'sun', 'power-off', 'clock',
+    'gamepad-2', 'smartphone', 'wifi', 'network', 'activity', 'maximize', 'minimize',
+    'scan-line', 'fingerprint', 'shield-check', 'mic', 'type', 'plus', 'minus', 'key-round',
+    'sliders-horizontal', 'palette', 'pencil', 'more-horizontal', 'grip-vertical', 'check',
+    'check-circle', 'trash-2', 'refresh-cw', 'chevron-up', 'chevron-down', 'x'
+  ];
+  var THEME_SWATCHES = ['#FF3B47', '#FF7A45', '#FFB020', '#2ED573', '#3B82F6', '#A855F7', '#F43F5E'];
+  var GESTURE_KEYS = ['PLAY_PAUSE', 'MENU', 'HOME', 'BACK', 'CENTER', 'TV', 'GUIDE', 'INFO', 'MUTE', 'VOLUME_UP', 'VOLUME_DOWN', 'POWER'];
+  var KEY_LABELS = {
+    POWER: 'Power', TV_POWER: 'TV Power', HOME: 'Home', BACK: 'Back', MENU: 'Menu',
+    UP: 'Up', DOWN: 'Down', LEFT: 'Left', RIGHT: 'Right', CENTER: 'OK', OK: 'OK',
+    VOLUME_UP: 'Volume +', VOLUME_DOWN: 'Volume −', MUTE: 'Mute',
+    PLAY_PAUSE: 'Play / Pause', PLAY: 'Play', PAUSE: 'Pause', STOP: 'Stop',
+    NEXT: 'Next', PREVIOUS: 'Previous', REWIND: 'Rewind', FAST_FORWARD: 'Forward',
+    TV: 'Live TV', GUIDE: 'Guide', INFO: 'Info', SETTINGS: 'TV Settings',
+    ENTER: 'Enter', DEL: 'Delete', SEARCH: 'Search', ASSIST: 'Assistant',
+    CHANNEL_UP: 'Channel +', CHANNEL_DOWN: 'Channel −', TV_INPUT: 'Input',
+    CAPTIONS: 'Captions', SLEEP: 'Sleep', WAKEUP: 'Wake', VOICE_ASSIST: 'Voice',
+    APP_SWITCH: 'Recent apps', RED: 'Red', GREEN: 'Green', YELLOW: 'Yellow', BLUE: 'Blue',
+    NUM_0: '0', NUM_1: '1', NUM_2: '2', NUM_3: '3', NUM_4: '4',
+    NUM_5: '5', NUM_6: '6', NUM_7: '7', NUM_8: '8', NUM_9: '9'
+  };
+  var KEY_OPTIONS = Object.keys(KEY_LABELS).map(function (name) {
+    return { name: name, label: KEY_LABELS[name] };
+  });
+  var DEFAULT_CONFIG = {
+    version: 3,
+    theme: { accent: '#FF3B47', background: '#050608', glow: true, labels: true },
+    layout: { pad: 'large', volumeSide: 'left', showChannel: true },
+    access: { easy: false, haptics: true, motion: true },
+    tiles: [
+      { id: 'tile-power', label: 'Power', icon: 'power', type: 'key', value: 'POWER', accent: true },
+      { id: 'tile-live', label: 'Live TV', icon: 'tv', type: 'key', value: 'TV' },
+      { id: 'tile-guide', label: 'Guide', icon: 'list-video', type: 'key', value: 'GUIDE' }
+    ],
+    macros: [],
+    gestures: {
+      longPress: { type: 'key', value: 'MENU' },
+      twoFingerTap: { type: 'none' },
+      twoFingerVolume: true
+    }
+  };
+  var config = loadConfig();
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function isHex(value) {
+    return /^#[0-9a-f]{6}$/i.test(String(value || ''));
+  }
+
+  function hexToRgb(hex) {
+    var match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || ''));
+    if (!match) return '255,59,71';
+    return parseInt(match[1], 16) + ',' + parseInt(match[2], 16) + ',' + parseInt(match[3], 16);
+  }
+
+  function safeIcon(name) {
+    return ICON_OPTIONS.indexOf(name) >= 0 ? name : 'circle-dot';
+  }
+
+  function normalizeAction(action, fallback) {
+    if (action && action.type === 'none') return { type: 'none' };
+    if (action && action.type === 'key' && typeof action.value === 'string' && action.value) {
+      return { type: 'key', value: action.value };
+    }
+    if (action && action.type === 'macro' && action.value) {
+      return { type: 'macro', value: String(action.value) };
+    }
+    return clone(fallback || { type: 'none' });
+  }
+
+  function normalizeMacro(raw, index) {
+    if (!raw || typeof raw !== 'object') return null;
+    var steps = Array.isArray(raw.steps) ? raw.steps.slice(0, 50).map(function (step) {
+      if (!step || typeof step !== 'object') return { type: 'wait', ms: 300 };
+      if (step.type === 'key') return { type: 'key', value: String(step.value || 'OK') };
+      if (step.type === 'launch') return { type: 'launch', value: String(step.value || '') };
+      if (step.type === 'text') return { type: 'text', value: String(step.value || '') };
+      return { type: 'wait', ms: Math.max(0, Math.min(10000, Number(step.ms) || 300)) };
+    }) : [];
+    return {
+      id: String(raw.id || ('macro-' + index + '-' + Date.now())),
+      name: String(raw.name || 'Macro').slice(0, 40),
+      steps: steps
+    };
+  }
+
+  function normalizeConfig(raw) {
+    var defaults = clone(DEFAULT_CONFIG);
+    if (!raw || typeof raw !== 'object') return defaults;
+    var fromVersion = Number(raw.version) || 1;
+
+    var theme = raw.theme || {};
+    if (isHex(theme.accent)) defaults.theme.accent = theme.accent.toUpperCase();
+    if (isHex(theme.background)) defaults.theme.background = theme.background.toUpperCase();
+    if (typeof theme.glow === 'boolean') defaults.theme.glow = theme.glow;
+    if (typeof theme.labels === 'boolean') defaults.theme.labels = theme.labels;
+
+    var layout = raw.layout || {};
+    if (['small', 'medium', 'large'].indexOf(layout.pad) >= 0) defaults.layout.pad = layout.pad;
+    if (layout.volumeSide === 'right') defaults.layout.volumeSide = 'right';
+    if (typeof layout.showChannel === 'boolean') defaults.layout.showChannel = layout.showChannel;
+
+    var access = raw.access || {};
+    if (typeof access.easy === 'boolean') defaults.access.easy = access.easy;
+    if (typeof access.haptics === 'boolean') defaults.access.haptics = access.haptics;
+    if (typeof access.motion === 'boolean') defaults.access.motion = access.motion;
+
+    if (Array.isArray(raw.tiles)) {
+      defaults.tiles = raw.tiles.slice(0, 12).map(function (tile, index) {
+        if (!tile || typeof tile !== 'object') return null;
+        var type = ['key', 'macro', 'launch', 'text'].indexOf(tile.type) >= 0 ? tile.type : 'key';
+        return {
+          id: String(tile.id || ('tile-' + index + '-' + Date.now())),
+          label: String(tile.label || 'Button').slice(0, 24),
+          icon: safeIcon(tile.icon),
+          type: type,
+          value: String(tile.value || (type === 'key' ? 'POWER' : '')),
+          accent: !!tile.accent
+        };
+      }).filter(Boolean);
+    }
+
+    // v3 repairs the default Power shortcut if an old edit left it sending
+    // Assistant. Custom buttons keep whatever the user chose.
+    if (fromVersion < 3) {
+      defaults.tiles.forEach(function (tile) {
+        if (tile.id === 'tile-power' && tile.label === 'Power' && tile.value === 'ASSIST') {
+          tile.value = 'POWER';
+          tile.icon = 'power';
+        }
+      });
+    }
+
+    if (Array.isArray(raw.macros)) {
+      defaults.macros = raw.macros.slice(0, 30).map(normalizeMacro).filter(Boolean);
+    }
+
+    var gestures = raw.gestures || {};
+    defaults.gestures.longPress = normalizeAction(gestures.longPress, DEFAULT_CONFIG.gestures.longPress);
+    defaults.gestures.twoFingerTap = normalizeAction(gestures.twoFingerTap, DEFAULT_CONFIG.gestures.twoFingerTap);
+    if (typeof gestures.twoFingerVolume === 'boolean') {
+      defaults.gestures.twoFingerVolume = gestures.twoFingerVolume;
+    }
+    return defaults;
+  }
+
+  function loadConfig() {
+    try {
+      var raw = JSON.parse(localStorage.getItem(CONFIG_KEY) || 'null');
+      if (!raw) return clone(DEFAULT_CONFIG);
+      var cfg = normalizeConfig(raw);
+      if (Number(raw.version) !== cfg.version) {
+        try { localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg)); } catch (e) {}
+      }
+      return cfg;
+    } catch (e) {
+      return clone(DEFAULT_CONFIG);
+    }
+  }
+
+  function saveConfig() {
+    try {
+      localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    } catch (e) {
+      // The remote still works for this session if storage is unavailable.
+    }
+  }
+
+  function findTile(id) {
+    for (var i = 0; i < config.tiles.length; i++) {
+      if (config.tiles[i].id === id) return config.tiles[i];
+    }
+    return null;
+  }
+
+  function findMacro(id) {
+    for (var i = 0; i < config.macros.length; i++) {
+      if (config.macros[i].id === id) return config.macros[i];
+    }
+    return null;
+  }
+
+  function actionLabel(action) {
+    if (!action || action.type === 'none') return 'None';
+    if (action.type === 'key') return KEY_LABELS[action.value] || action.value;
+    if (action.type === 'macro') {
+      var macro = findMacro(action.value);
+      return macro ? macro.name : 'Missing macro';
+    }
+    if (action.type === 'launch') return action.value;
+    if (action.type === 'text') return 'Text: ' + action.value;
+    return 'Action';
+  }
+
+  function actionToOption(action) {
+    if (!action || action.type === 'none') return 'none';
+    if (action.type === 'macro') return 'macro:' + action.value;
+    if (action.type === 'key') return 'key:' + action.value;
+    return 'none';
+  }
+
+  function actionFromOption(value) {
+    if (value === 'none') return { type: 'none' };
+    if (value.indexOf('macro:') === 0) return { type: 'macro', value: value.slice(6) };
+    if (value.indexOf('key:') === 0) return { type: 'key', value: value.slice(4) };
+    return { type: 'none' };
+  }
+
+  function applyConfig() {
+    var root = document.documentElement;
+    root.style.setProperty('--accent', config.theme.accent);
+    root.style.setProperty('--accent-rgb', hexToRgb(config.theme.accent));
+    root.style.setProperty('--bg', config.theme.background);
+    root.style.setProperty('--glow', config.theme.glow ? '1' : '0');
+    document.body.classList.toggle('hide-labels', !config.theme.labels && !config.access.easy);
+    document.body.classList.toggle('easy', config.access.easy);
+    document.body.classList.toggle('reduce-motion', !config.access.motion);
+
+    var remote = $('#tab-remote');
+    if (remote) {
+      remote.classList.toggle('volume-right', config.layout.volumeSide === 'right');
+      remote.classList.toggle('no-channel', !config.layout.showChannel);
+      var size = config.layout.pad === 'small' ? '230px' :
+        config.layout.pad === 'medium' ? '262px' : '300px';
+      remote.style.setProperty('--pad-max', size);
+    }
+
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', config.theme.background);
+    renderTiles();
+  }
+
+  function renderTiles() {
+    var row = $('#tileRow');
+    if (!row) return;
+    row.innerHTML = '';
+    if (!config.tiles.length) {
+      var empty = document.createElement('button');
+      empty.className = 'action-tile add-tile';
+      empty.innerHTML = icon('plus') + '<span>Add button</span>';
+      empty.addEventListener('click', function () { setTab('customize'); });
+      row.appendChild(empty);
+      return;
+    }
+    config.tiles.forEach(function (tile) {
+      var el = document.createElement('button');
+      el.className = 'action-tile' + (tile.accent ? ' accent' : '');
+      el.dataset.actionId = tile.id;
+      el.innerHTML = icon(safeIcon(tile.icon)) + '<span>' + esc(tile.label) + '</span>' +
+        (tile.type === 'macro' ? '<i class="macro-badge"></i>' : '');
+      row.appendChild(el);
+    });
+  }
+
+  function runAction(action, origin, silent) {
+    if (!action) return;
+    if (action.type === 'key') {
+      press(action.value, origin, silent);
+      return;
+    }
+    if (action.type === 'macro') {
+      var macro = findMacro(action.value);
+      if (!macro) { toast('That macro no longer exists'); return; }
+      if (!Native.macro) { toast('Install the new APK for macros'); return; }
+      buzz(8);
+      toast('Running ' + macro.name);
+      try { Native.macro(JSON.stringify({ name: macro.name, steps: macro.steps })); }
+      catch (e) { toast(String(e)); }
+      return;
+    }
+    if (action.type === 'launch') {
+      if (!action.value) { toast('This button has no app link'); return; }
+      haptic('key');
+      try { Native.launch(action.value); }
+      catch (e) { toast(String(e)); }
+      return;
+    }
+    if (action.type === 'text') {
+      if (!action.value) { toast('This button has no text'); return; }
+      buzz(8);
+      try { Native.text(action.value); toast('Sent'); }
+      catch (e) { toast(String(e)); }
+    }
+  }
 
   /* ---------- native bridge ---------- */
   var Native = window.Native || (PREVIEW ? mock() : null);
 
+  var mockCalls = {
+    key: [], launch: [], text: [], macro: [], haptic: [],
+    pairStart: [], pairFinish: [], pairCancel: [], scan: [], connect: [], disconnect: [], forget: []
+  };
+  window.__bridgeCalls = mockCalls;
+
   function mock() {
+    var mockPaired = location.search.indexOf('pair=1') === -1;
     return {
       savedHost: function () { return PREVIEW_CONNECT ? '' : '192.168.1.10'; },
+      isPaired: function () { return mockPaired; },
+      haptic: function (kind) { mockCalls.haptic.push(kind || 'tap'); },
+      pairStart: function (host) {
+        mockCalls.pairStart.push(host);
+        setTimeout(function () {
+          window.__tv({ type: 'pair', status: 'waiting', host: host,
+            message: 'Look at the TV for a 6-character code.' });
+        }, 500);
+      },
+      pairFinish: function (code) {
+        mockCalls.pairFinish.push(code);
+        var self = this;
+        var host = $('#pairHost').textContent;
+        if (!code || code.length !== 6) {
+          window.__tv({ type: 'pair', status: 'error', host: host,
+            message: 'Enter all 6 characters.' });
+          return;
+        }
+        setTimeout(function () {
+          mockPaired = true;
+          window.__tv({ type: 'pair', status: 'success', host: host,
+            message: 'Paired', fingerprint: 'A0:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF' });
+          self.connect(host);
+        }, 450);
+      },
+      pairCancel: function () {
+        mockCalls.pairCancel.push(true);
+        window.__tv({ type: 'pair', status: 'cancelled', host: '' });
+      },
       scan: function () {
+        mockCalls.scan.push(true);
         setTimeout(function () {
           window.__tv({ type: 'scan', done: true, tvs: [
             { ip: '192.168.1.10', name: 'Xstream Box', model: 'XstreamIPTV1-VT' }
@@ -542,6 +1736,7 @@
         }, 700);
       },
       connect: function (host) {
+        mockCalls.connect.push(host);
         setTimeout(function () {
           window.__tv({ type: 'state', status: 'connecting', host: host, error: '', error_kind: '' });
         }, 150);
@@ -553,14 +1748,28 @@
             volume: { level: 18, max: 25, muted: false }, error: '', error_kind: '' });
         }, 950);
       },
-      disconnect: function () {},
-      forget: function () {},
+      disconnect: function () { mockCalls.disconnect.push(true); },
+      forget: function () { mockCalls.forget.push(true); },
       key: function (k) {
+        mockCalls.key.push(k);
         if (k === 'VOLUME_UP') bumpVolume(1);
         if (k === 'VOLUME_DOWN') bumpVolume(-1);
       },
-      text: function (t) { toast('Sent “' + t + '”'); },
-      launch: function (u) { toast('Launching ' + u); },
+      text: function (t) {
+        mockCalls.text.push(t);
+        toast('Sent “' + t + '”');
+      },
+      launch: function (u) {
+        mockCalls.launch.push(u);
+        toast('Launching ' + u);
+      },
+      macro: function (json) {
+        mockCalls.macro.push(json);
+        var spec = {};
+        try { spec = JSON.parse(json); } catch (e) {}
+        toast('Running ' + (spec.name || 'macro'));
+        setTimeout(function () { toast((spec.name || 'Macro') + ' done'); }, 900);
+      },
       exit: function () {},
       info: function () { return '{}'; }
     };
@@ -582,8 +1791,30 @@
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
+  function haptic(kind) {
+    if (!config.access.haptics) return;
+    var type = kind || 'tap';
+    try {
+      if (Native && Native.haptic) {
+        Native.haptic(type);
+        return;
+      }
+    } catch (e) {}
+    try {
+      if (navigator.vibrate) {
+        // Browser fallback, used only by the headless preview.
+        var pattern = {
+          tap: 22, tick: 18, key: 26, long: 44, ok: [22, 14, 30],
+          back: [18, 30, 18], success: [18, 46, 24, 60, 42], error: [30, 46, 34]
+        }[type] || 22;
+        navigator.vibrate(pattern);
+      }
+    } catch (e) {}
+  }
+
   function buzz(ms) {
-    try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {}
+    // Called throughout the UI with a duration. Map it to a semantic pattern.
+    haptic(ms >= 20 ? 'long' : ms >= 10 ? 'ok' : 'tap');
   }
 
   function toast(message) {
@@ -604,16 +1835,76 @@
     'com.amazon.amazonvideo.livingroom': 'Prime Video',
     'in.startv.hotstar': 'Hotstar',
     'com.spotify.tv.android': 'Spotify',
+    'com.jio.media.ondemand': 'JioCinema',
+    'com.jio.tvapp': 'JioTV',
+    'com.sonyliv': 'SonyLIV',
+    'com.zee5.androiddt': 'ZEE5',
+    'com.disney.disneyplus': 'Disney+',
     'com.android.vending': 'Play Store',
     'com.internet.tvbrowser': 'Browser',
     'com.google.android.tvlauncher': 'Home',
     'com.android.tv.settings': 'Settings',
-    'com.google.android.apps.tv.launcherx': 'Home'
+    'com.google.android.apps.tv.launcherx': 'Home',
+    'com.google.android.katniss': 'Google'
   };
 
   function appName(pkg) {
-    if (!pkg) return '—';
+    if (!pkg) return 'TV home';
     return APP_NAMES[pkg] || pkg.split('.').pop();
+  }
+
+  var MEDIA_APPS = {
+    'com.google.android.youtube.tv': true,
+    'com.google.android.youtube': true,
+    'com.netflix.ninja': true,
+    'com.amazon.amazonvideo.livingroom': true,
+    'in.startv.hotstar': true,
+    'com.spotify.tv.android': true,
+    'com.jio.media.ondemand': true,
+    'com.sonyliv': true,
+    'com.zee5.androiddt': true,
+    'com.disney.disneyplus': true
+  };
+
+  function isMediaApp(pkg) {
+    return !!MEDIA_APPS[pkg];
+  }
+
+  function contextKind(pkg) {
+    if (!pkg) return 'live';
+    if (MEDIA_APPS[pkg]) return 'media';
+    if (pkg === 'com.airtel.tv') return 'live';
+    return 'other';
+  }
+
+  function renderContext() {
+    var bar = $('#ctxBar');
+    if (!bar) return;
+    var pkg = state.app || '';
+    var kind = contextKind(pkg);
+    var media = kind === 'media';
+    var label = pkg ? appName(pkg) : 'TV home';
+    $('#ctxAppName').textContent = label;
+    $('#ctxNow').setAttribute('aria-label', 'Open apps on the box. Now on TV: ' + label);
+    $('#ctxLogo').innerHTML = icon(media ? 'play' : kind === 'live' && pkg ? 'tv' : 'layout-grid');
+
+    var actions;
+    if (media) {
+      actions = [['SEARCH', 'Search', 'search', 'Search'], ['CAPTIONS', 'Captions', 'subtitles', 'CC'],
+        ['MENU', 'Options', 'more-horizontal', 'Options']];
+    } else if (kind === 'live') {
+      actions = [['GUIDE', 'Guide', 'list-video', 'Guide'], ['MENU', 'Options', 'more-horizontal', 'Options'],
+        ['CAPTIONS', 'Captions', 'subtitles', 'CC']];
+    } else {
+      actions = [['APP_SWITCH', 'Recent apps', 'layout-grid', 'Apps'], ['SEARCH', 'Search', 'search', 'Search'],
+        ['HOME', 'Home', 'home', 'Home']];
+    }
+    $('#ctxKeys').innerHTML = actions.map(function (item) {
+      return '<button class="ctxkey" data-ctx-key="' + item[0] + '" aria-label="' + esc(item[1]) + '" title="' + esc(item[1]) + '">' +
+        icon(item[2]) + '<span class="ctxklabel">' + esc(item[3] || item[1]) + '</span></button>';
+    }).join('');
+
+    $('#tab-remote').classList.toggle('media-app', media);
   }
 
   /* ---------- screens ---------- */
@@ -629,13 +1920,39 @@
 
   function setTab(name) {
     currentTab = name;
+    if (name !== 'remote') showMain();
     $$('.tab').forEach(function (tab) {
       tab.hidden = tab.id !== 'tab-' + name;
     });
-    $$('#tabs button').forEach(function (btn) {
-      btn.classList.toggle('on', btn.dataset.tab === name);
-    });
     if (name === 'settings') renderSettings();
+    if (name === 'customize') renderCustomize();
+    var active = document.getElementById('tab-' + name);
+    if (active) active.scrollTop = 0;
+    closeSheet();
+  }
+
+  function goRemote() {
+    setTab('remote');
+    if (state.status === 'connected' || state.status === 'reconnecting') showMain();
+    else showConnect();
+  }
+
+  function openSheet() {
+    var sheet = $('#moreSheet');
+    var hint = $('#sheetHint');
+    if (hint) {
+      var bits = [];
+      bits.push(config.gestures.longPress.type === 'none' ? 'Long-press: off' : 'Long-press: ' + actionLabel(config.gestures.longPress));
+      if (config.gestures.twoFingerVolume) bits.push('two fingers: volume');
+      if (config.gestures.twoFingerTap.type !== 'none') bits.push('two-finger tap: ' + actionLabel(config.gestures.twoFingerTap));
+      hint.textContent = bits.join(' · ');
+    }
+    if (sheet) sheet.hidden = false;
+  }
+
+  function closeSheet() {
+    var sheet = $('#moreSheet');
+    if (sheet) sheet.hidden = true;
   }
 
   /* ---------- state ---------- */
@@ -648,7 +1965,10 @@
       : state.status === 'connecting' ? 'Connecting'
       : state.status === 'reconnecting' ? 'Reconnecting'
       : state.status === 'error' ? 'Offline' : 'Offline';
-    $('#hdrSub').textContent = connected ? (state.model || 'Remote') : 'Remote';
+    var sub = $('#hdrSub');
+    if (sub) sub.textContent = connected ? (state.model || 'Remote') : 'Remote';
+    var wifi = $('#btnGoConnect');
+    if (wifi) wifi.classList.toggle('off', !connected);
 
     if (connected) {
       startedOnce = true;
@@ -656,11 +1976,15 @@
       $('#banner').hidden = true;
       $('#connectStatus').hidden = true;
       $('#errCard').hidden = true;
-      $('#chipDeviceText').textContent = state.host || state.model || 'Xstream';
-      $('#chipRttText').textContent = state.rtt ? state.rtt + ' ms' : '—';
-      $('#chipAppText').textContent = appName(state.app);
+      var chipDevice = $('#chipDeviceText');
+      if (chipDevice) chipDevice.textContent = state.host || state.model || 'Xstream';
+      var chipRtt = $('#chipRttText');
+      if (chipRtt) chipRtt.textContent = state.rtt ? state.rtt + ' ms' : '—';
+      var chipApp = $('#chipAppText');
+      if (chipApp) chipApp.textContent = appName(state.app);
       document.title = (state.model || 'Xstream') + ' · Remote';
       renderVolume();
+      renderContext();
       renderSettings();
       return;
     }
@@ -692,21 +2016,33 @@
       $('#banner').hidden = true;
       $('#errCard').hidden = false;
       $('#errText').textContent = state.error || 'Could not reach the box.';
-      $('#errHelp').hidden = state.kind !== 'auth' && state.kind !== 'dropped';
+      $('#errHelp').hidden = state.kind !== 'auth' && state.kind !== 'pair';
+      return;
+    }
+
+    if (state.status === 'idle' || state.status === 'disconnected') {
+      showConnect();
+      $('#connectStatus').hidden = true;
+      $('#banner').hidden = true;
+      $('#errCard').hidden = true;
     }
   }
 
   function renderVolume() {
     if (state.level < 0 || state.max <= 0) {
-      $('#volNum').textContent = '—';
-      $('#volFill').style.width = '0%';
+      $('#volNum').textContent = '-';
       return;
     }
-    var pct = Math.max(0, Math.min(100, Math.round(state.level / state.max * 100)));
-    $('#volNum').textContent = state.muted ? 'Muted' : state.level;
-    $('#volFill').style.width = pct + '%';
-    $('#btnMute').classList.toggle('muted', state.muted);
-    $('#muteIcon').innerHTML = '<use href="#i-' + (state.muted ? 'volume-x' : state.level === 0 ? 'volume-off' : state.level < 8 ? 'volume-1' : 'volume-2') + '"/>';
+    var muted = !!state.muted;
+    var iconName = muted ? 'volume-x' : state.level === 0 ? 'volume-off' : state.level < 8 ? 'volume-1' : 'volume-2';
+    $('#volNum').textContent = muted ? 'Muted' : state.level;
+    $('#btnMute').classList.toggle('muted', muted);
+    $('#btnMute').setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+    $('#muteIcon').innerHTML = '<use href="#i-' + iconName + '"/>';
+    var muteLabel = $('#muteLabel');
+    if (muteLabel) muteLabel.textContent = muted ? 'Unmute' : 'Mute';
+    var rail = $('#railVolIcon');
+    if (rail) rail.innerHTML = '<use href="#i-' + iconName + '"/>';
   }
 
   function renderSettings() {
@@ -717,10 +2053,26 @@
     $('#setModel').textContent = state.model ? (state.vendor ? state.vendor + ' ' + state.model : state.model) : '—';
     $('#setSw').textContent = state.sw || '—';
     $('#setApp').textContent = appName(state.app);
-    $('#setRtt').textContent = state.rtt ? state.rtt + ' ms' : '—';
-    $('#setCertFp').textContent = state.cert || '—';
-    $('#setPeerName').textContent = state.model || '—';
-    $('#setPeerFp').textContent = state.peer || '—';
+    $('#setRtt').textContent = state.rtt ? state.rtt + ' ms' : '-';
+    $('#setPairing').textContent = state.paired ? 'Paired' : 'Not paired';
+    $('#setCertFp').textContent = state.cert || 'Generated on first pair';
+    $('#setPeerName').textContent = state.peer ? 'Pinned' : 'Not pinned';
+    $('#setPeerFp').textContent = state.peer || '-';
+    syncAccessSettings();
+  }
+
+  function syncAccessSettings() {
+    var map = [
+      ['#setEasy', '#setEasyToggle', config.access.easy],
+      ['#setHaptics', '#setHapticsToggle', config.access.haptics],
+      ['#setMotion', '#setMotionToggle', config.access.motion]
+    ];
+    map.forEach(function (item) {
+      var row = $(item[0]);
+      var toggle = $(item[1]);
+      if (row) row.setAttribute('aria-pressed', String(!!item[2]));
+      if (toggle) toggle.classList.toggle('on', !!item[2]);
+    });
   }
 
   function onState(ev) {
@@ -733,6 +2085,7 @@
     if ('rtt' in ev) state.rtt = ev.rtt || 0;
     if ('cert' in ev) state.cert = ev.cert || '';
     if ('peer' in ev) state.peer = ev.peer || '';
+    if ('paired' in ev) state.paired = !!ev.paired;
     if ('error' in ev) state.error = ev.error || '';
     if ('error_kind' in ev) state.kind = ev.error_kind || '';
     if (ev.volume) applyVolume(ev.volume.level, ev.volume.max, ev.volume.muted);
@@ -752,21 +2105,19 @@
     state.level = next;
     state.muted = false;
     renderVolume();
-    showHud(next, false);
-  }
-
-  function showHud(level, muted) {
-    var hud = $('#volHud');
-    $('#volHudNum').textContent = muted ? 'Mute' : level;
-    $('#hudIcon').innerHTML = '<use href="#i-' + (muted ? 'volume-x' : level === 0 ? 'volume-off' : level < 8 ? 'volume-1' : 'volume-2') + '"/>';
-    hud.classList.add('show');
-    clearTimeout(hudTimer);
-    hudTimer = setTimeout(function () { hud.classList.remove('show'); }, 1400);
   }
 
   /* ---------- key handling ---------- */
-  function press(key, origin) {
-    if (currentTab === 'remote' || currentTab === 'keys') buzz(7);
+  function press(key, origin, silent) {
+    if (!silent && (currentTab === 'remote' || currentTab === 'keys' || currentTab === 'numbers')) {
+      var kind = 'key';
+      if (key === 'CENTER' || key === 'OK') kind = 'ok';
+      else if (key === 'BACK') kind = 'back';
+      else if (key === 'UP' || key === 'DOWN' || key === 'LEFT' || key === 'RIGHT' ||
+        key === 'VOLUME_UP' || key === 'VOLUME_DOWN' ||
+        key === 'CHANNEL_UP' || key === 'CHANNEL_DOWN') kind = 'tick';
+      haptic(kind);
+    }
     if (key === 'VOLUME_UP') bumpVolume(1);
     if (key === 'VOLUME_DOWN') bumpVolume(-1);
     try { Native.key(key); } catch (e) { toast(String(e)); }
@@ -804,12 +2155,27 @@
 
   $$('[data-key]').forEach(function (el) { bindPress(el, el.dataset.key, el.dataset.repeat === '1'); });
 
-  /* d-pad: tap a ring segment = that direction, tap centre = OK, swipe = direction */
+  /* d-pad: tap a quadrant, swipe = direction, long-press = smart action,
+     two fingers slide = volume, two-finger tap = another smart action */
   (function () {
     var pad = $('#pad');
+    if (!pad) return;
     var active = null;
     var start = null;
     var fired = false;
+    var longTimer = 0;
+    var longFired = false;
+    var pointers = {};
+    var twoMode = false;
+    var twoStart = null;
+    var twoLastY = 0;
+    var twoAccum = 0;
+    var twoMoved = false;
+    var twoStartTime = 0;
+
+    function pointerList() {
+      return Object.keys(pointers).map(function (id) { return pointers[id]; });
+    }
 
     function hitTest(x, y) {
       var box = pad.getBoundingClientRect();
@@ -826,58 +2192,159 @@
 
     function mark(dir) {
       if (active) active.classList.remove('on');
+      if (!dir) { active = null; return; }
       active = dir === 'CENTER' ? $('#okBtn') : pad.querySelector('.seg[data-dir="' + dir + '"]');
       if (active) active.classList.add('on');
     }
 
+    function clearLong() {
+      if (longTimer) clearTimeout(longTimer);
+      longTimer = 0;
+    }
+
+    function startLong() {
+      clearLong();
+      var action = config.gestures.longPress;
+      if (!action || action.type === 'none') return;
+      longTimer = setTimeout(function () {
+        if (!start || fired || twoMode) return;
+        longFired = true;
+        mark('CENTER');
+        haptic('long');
+        runAction(action, null, true);
+      }, 520);
+    }
+
     function fire(dir) {
       mark(dir);
-      buzz(7);
-      if (dir === 'CENTER') {
-        Native.key('CENTER');
-      } else {
-        Native.key(dir);
+      haptic(dir === 'CENTER' ? 'ok' : 'tick');
+      try { Native.key(dir === 'CENTER' ? 'CENTER' : dir); }
+      catch (e) { toast(String(e)); }
+      setTimeout(function () { mark(null); }, 140);
+    }
+
+    function beginTwo() {
+      var points = pointerList();
+      if (points.length < 2 || twoMode) return;
+      twoMode = true;
+      twoMoved = false;
+      twoStartTime = Date.now();
+      twoAccum = 0;
+      twoStart = {
+        x: (points[0].x + points[1].x) / 2,
+        y: (points[0].y + points[1].y) / 2
+      };
+      twoLastY = twoStart.y;
+      clearLong();
+      start = null;
+      fired = true;
+      longFired = false;
+      mark(null);
+    }
+
+    function updateTwo() {
+      var points = pointerList();
+      if (points.length < 2) return;
+      var avgY = (points[0].y + points[1].y) / 2;
+      if (!twoStart) { twoStart = { x: 0, y: avgY }; twoLastY = avgY; }
+      var dy = avgY - twoLastY;
+      twoLastY = avgY;
+      if (Math.abs(avgY - twoStart.y) > 12) twoMoved = true;
+      if (!config.gestures.twoFingerVolume) return;
+      twoAccum += dy;
+      while (twoAccum <= -26) {
+        twoAccum += 26;
+        press('VOLUME_UP');
       }
-      setTimeout(function () {
-        if (active) active.classList.remove('on');
-        active = null;
-      }, 130);
+      while (twoAccum >= 26) {
+        twoAccum -= 26;
+        press('VOLUME_DOWN');
+      }
+    }
+
+    function endTwo() {
+      var duration = Date.now() - twoStartTime;
+      if (!twoMoved && duration < 340) {
+        var action = config.gestures.twoFingerTap;
+        if (action && action.type !== 'none') runAction(action, null);
+      }
+      twoMode = false;
+      twoStart = null;
+      twoMoved = false;
+      twoAccum = 0;
+      mark(null);
     }
 
     pad.addEventListener('pointerdown', function (ev) {
       ev.preventDefault();
+      try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
+      pointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      var count = pointerList().length;
+      if (count >= 2) { beginTwo(); return; }
+      if (twoMode) return;
       start = { x: ev.clientX, y: ev.clientY };
       fired = false;
-      try { pad.setPointerCapture(ev.pointerId); } catch (e) {}
+      longFired = false;
       mark(hitTest(ev.clientX, ev.clientY));
+      startLong();
     });
 
     pad.addEventListener('pointermove', function (ev) {
+      if (!pointers[ev.pointerId]) return;
+      pointers[ev.pointerId] = { x: ev.clientX, y: ev.clientY };
+      var count = pointerList().length;
+      if (twoMode || count >= 2) {
+        if (!twoMode) beginTwo();
+        updateTwo();
+        return;
+      }
       if (!start || fired) return;
       var dx = ev.clientX - start.x;
       var dy = ev.clientY - start.y;
       if (Math.sqrt(dx * dx + dy * dy) < 24) return;
+      clearLong();
       fired = true;
       if (Math.abs(dx) > Math.abs(dy)) fire(dx > 0 ? 'RIGHT' : 'LEFT');
       else fire(dy > 0 ? 'DOWN' : 'UP');
     });
 
-    pad.addEventListener('pointerup', function (ev) {
+    function pointerEnd(ev) {
+      if (!pointers[ev.pointerId]) return;
+      delete pointers[ev.pointerId];
+      var remaining = pointerList().length;
+      if (twoMode) {
+        if (remaining === 0) endTwo();
+        return;
+      }
       if (!start) return;
-      var dir = hitTest(ev.clientX, ev.clientY);
-      if (!fired) fire(dir);
+      if (longFired) {
+        clearLong();
+        start = null;
+        fired = false;
+        longFired = false;
+        mark(null);
+        return;
+      }
+      if (!fired) fire(hitTest(ev.clientX, ev.clientY));
+      clearLong();
       start = null;
       fired = false;
-      if (active) active.classList.remove('on');
-      active = null;
-    });
+      mark(null);
+    }
 
-    pad.addEventListener('pointercancel', function () {
+    pad.addEventListener('pointerup', pointerEnd);
+    pad.addEventListener('pointercancel', function (ev) {
+      delete pointers[ev.pointerId];
+      clearLong();
       start = null;
       fired = false;
-      if (active) active.classList.remove('on');
-      active = null;
+      longFired = false;
+      twoMode = false;
+      twoStart = null;
+      twoAccum = 0;
+      mark(null);
     });
+    pad.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
   })();
 
   $('#btnMute').addEventListener('pointerdown', function (ev) {
@@ -886,13 +2353,10 @@
     buzz(7);
     state.muted = !state.muted;
     renderVolume();
-    showHud(state.level, state.muted);
   });
 
-  /* ---------- tabs ---------- */
-  $$('#tabs button').forEach(function (btn) {
-    btn.addEventListener('click', function () { setTab(btn.dataset.tab); });
-  });
+  /* ---------- header / panels / sheet ---------- */
+  // Bound after the config and panel helpers are declared (bindRemoteControls).
 
   /* ---------- keys tab ---------- */
   var KEY_TILES = [
@@ -904,6 +2368,7 @@
     ['FAST_FORWARD', 'Forward', 'fast-forward'], ['STOP', 'Stop', 'square'],
     ['PREVIOUS', 'Previous', 'skip-back'], ['NEXT', 'Next', 'skip-forward'],
     ['CAPTIONS', 'Captions', 'subtitles'], ['SEARCH', 'Search', 'search'],
+    ['MENU', 'Menu', 'more-horizontal'], ['ASSIST', 'Assistant', 'mic'],
     ['SETTINGS', 'Settings', 'settings'], ['APP_SWITCH', 'Apps', 'layout-grid'],
     ['SLEEP', 'Sleep', 'power-off'], ['WAKEUP', 'Wake', 'sun']
   ];
@@ -919,20 +2384,27 @@
 
   /* ---------- app shortcuts ---------- */
   var APP_SHORTCUTS = [
-    ['YouTube', '#FF4438', 'https://www.youtube.com'],
-    ['Netflix', '#E50914', 'https://www.netflix.com'],
-    ['Hotstar', '#2AA7E8', 'https://www.hotstar.com'],
-    ['Play Store', '#34C759', 'market://details?id=com.android.vending']
+    ['YouTube', 'youtube', 'https://www.youtube.com/tv'],
+    ['Netflix', 'netflix', 'https://www.netflix.com/browse'],
+    ['Hotstar', 'hotstar', 'https://www.hotstar.com'],
+    ['Prime Video', 'primevideo', 'https://app.primevideo.com/'],
+    // The Spotify TV app is not on this box; its store listing is the useful action.
+    ['Spotify', 'spotify', 'market://search?q=spotify'],
+    ['Play Store', 'googleplay', 'market://details?id=com.android.vending']
   ];
 
-  var apps = $('#appRow');
-  APP_SHORTCUTS.forEach(function (item) {
+  var apps = $('#appGrid');
+  if (apps) APP_SHORTCUTS.forEach(function (item) {
     var el = document.createElement('button');
-    el.className = 'appchip';
-    el.innerHTML = '<span class="dot" style="background:' + item[1] + '"></span><span>' + esc(item[0]) + '</span>';
+    el.className = 'appcard';
+    // Hotstar / Prime Video ship as real raster artwork, so they fill the tile.
+    var cover = item[1] === 'hotstar' || item[1] === 'primevideo';
+    el.innerHTML = '<span class="app-ic"><svg viewBox="0 0 24 24" aria-hidden="true" class="' +
+      (cover ? 'cover' : '') + '"><use href="#b-' + item[1] + '"/></svg></span><span>' +
+      esc(item[0]) + '</span>';
     el.addEventListener('click', function () {
-      buzz(8);
-      try { Native.launch(item[2]); toast('Opening ' + item[0]); }
+      haptic('key');
+      try { Native.launch(item[2]); }
       catch (e) { toast(String(e)); }
     });
     apps.appendChild(el);
@@ -970,6 +2442,109 @@
     $('#txtInput').focus();
   });
 
+  /* ---------- pairing ---------- */
+  var pairState = { host: '', active: false, waiting: false, success: false };
+
+  function setPairStatus(message, tone) {
+    var el = $('#pairStatus');
+    el.textContent = message || '';
+    el.className = 'pair-status' + (tone ? ' ' + tone : '');
+  }
+
+  function setPairStep(step, error) {
+    ['#pairStepStart', '#pairStepCode', '#pairStepDone'].forEach(function (sel, index) {
+      var el = $(sel);
+      if (!el) return;
+      el.classList.toggle('done', index + 1 < step);
+      el.classList.toggle('on', index + 1 === step && !error);
+      el.classList.toggle('error', !!error && index + 1 === step);
+    });
+  }
+
+  function openPairModal(ip) {
+    if (!ip) { toast('Pick a box first'); return; }
+    pairState = { host: ip, active: true, waiting: false, success: false };
+    $('#pairHost').textContent = ip;
+    $('#pairCode').value = '';
+    $('#pairSubmit').disabled = true;
+    setPairStatus('Starting pairing...', '');
+    setPairStep(1);
+    $('#pairModal').hidden = false;
+    closeSheet();
+    $('#errCard').hidden = true;
+    try {
+      if (!Native || !Native.pairStart) throw new Error('Install the new APK for pairing');
+      Native.pairStart(ip);
+    } catch (e) {
+      setPairStatus(String(e), 'error');
+    }
+  }
+
+  function cancelPairingUI() {
+    pairState.active = false;
+    pairState.success = false;
+    try { if (Native && Native.pairCancel) Native.pairCancel(); } catch (e) {}
+    $('#pairModal').hidden = true;
+    if (!startedOnce) showConnect();
+  }
+
+  function submitPairCode() {
+    if (!pairState.active || pairState.success) return;
+    var raw = $('#pairCode').value || '';
+    var code = raw.replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, 6);
+    $('#pairCode').value = code;
+    if (code.length !== 6) {
+      setPairStatus('Enter all 6 characters shown on the TV.', 'error');
+      haptic('error');
+      $('#pairCode').focus();
+      return;
+    }
+    $('#pairSubmit').disabled = true;
+    setPairStatus('Checking the code...', '');
+    try {
+      if (!Native || !Native.pairFinish) throw new Error('Install the new APK for pairing');
+      Native.pairFinish(code);
+    } catch (e) {
+      setPairStatus(String(e), 'error');
+      $('#pairSubmit').disabled = false;
+    }
+  }
+
+  function onPair(ev) {
+    if (!ev || ev.status === 'cancelled') {
+      if (ev && ev.status === 'cancelled') {
+        pairState.active = false;
+        pairState.success = false;
+        $('#pairModal').hidden = true;
+      }
+      return;
+    }
+    if (pairState.host && ev.host && ev.host !== pairState.host) return;
+    if (ev.status === 'waiting') {
+      pairState.waiting = true;
+      setPairStatus(ev.message || 'Enter the code shown on the TV.', '');
+      $('#pairSubmit').disabled = false;
+      setPairStep(2);
+      haptic('ok');
+      $('#pairCode').focus();
+    } else if (ev.status === 'success') {
+      pairState.success = true;
+      pairState.active = false;
+      setPairStatus('Paired. Connecting...', 'ok');
+      setPairStep(3);
+      haptic('success');
+      $('#pairSubmit').disabled = true;
+      // Stay open until the user taps Cancel / closes — don't auto-dismiss
+      // so the paired result stays visible on screen.
+    } else if (ev.status === 'error') {
+      setPairStatus(ev.message || 'Pairing failed. Try again.', 'error');
+      setPairStep(2, true);
+      haptic('error');
+      $('#pairSubmit').disabled = false;
+      $('#pairCode').focus();
+    }
+  }
+
   /* ---------- connect ---------- */
   function scan() {
     seen = {};
@@ -986,6 +2561,18 @@
     $('#manualForm').hidden = true;
     $('#errCard').hidden = true;
     $('#radar').classList.add('quiet');
+    var paired = true;
+    try {
+      if (Native && Native.isPaired) paired = !!Native.isPaired(ip);
+    } catch (e) {
+      paired = true;
+    }
+    if (!paired) {
+      showConnect();
+      buzz(10);
+      openPairModal(ip);
+      return;
+    }
     $('#connectStatus').hidden = false;
     $('#connectStatusText').textContent = 'Connecting to ' + ip + '…';
     showConnect();
@@ -994,6 +2581,34 @@
   }
 
   $('#btnScan').addEventListener('click', scan);
+
+  $('#btnPairNow').addEventListener('click', function () {
+    var ip = state.host;
+    if (!ip) { try { ip = Native.savedHost() || ''; } catch (e) {} }
+    openPairModal(ip);
+  });
+
+  $('#btnPairAgain').addEventListener('click', function () {
+    var ip = state.host;
+    if (!ip) { try { ip = Native.savedHost() || ''; } catch (e) {} }
+    openPairModal(ip);
+  });
+
+  $('#pairSubmit').addEventListener('click', submitPairCode);
+  $('#pairCancel').addEventListener('click', cancelPairingUI);
+  $$('[data-close-pair]').forEach(function (el) {
+    el.addEventListener('click', cancelPairingUI);
+  });
+  $('#pairCode').addEventListener('input', function () {
+    this.value = (this.value || '').replace(/[^0-9a-f]/gi, '').toUpperCase().slice(0, 6);
+    if (pairState.waiting) $('#pairSubmit').disabled = false;
+  });
+  $('#pairCode').addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter') {
+      ev.preventDefault();
+      submitPairCode();
+    }
+  });
 
   $('#btnManual').addEventListener('click', function () {
     var form = $('#manualForm');
@@ -1009,9 +2624,8 @@
   });
 
   $('#btnGoConnect').addEventListener('click', function () {
-    if (state.status === 'connected') {
+    if (state.status === 'connected' || state.status === 'reconnecting') {
       setTab('settings');
-      showMain();
     } else {
       showConnect();
       scan();
@@ -1025,6 +2639,10 @@
 
   $('#btnDisconnect').addEventListener('click', function () {
     try { Native.disconnect(); } catch (e) {}
+    state.status = 'idle';
+    state.error = '';
+    startedOnce = false;
+    showConnect();
     toast('Disconnected');
   });
 
@@ -1071,23 +2689,663 @@
     }
   }
 
+  /* ---------- header / panel bindings ---------- */
+  function closestEl(node, selector) {
+    while (node && node !== document) {
+      if (node.nodeType === 1 && node.matches && node.matches(selector)) return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  function bindRemoteControls() {
+    var settings = $('#btnSettings');
+    if (settings) settings.addEventListener('click', function () {
+      haptic('tap');
+      setTab('settings');
+    });
+
+    var more = $('#btnMore');
+    if (more) more.addEventListener('click', function () {
+      haptic('tap');
+      openSheet();
+    });
+
+    var ctxNow = $('#ctxNow');
+    if (ctxNow) ctxNow.addEventListener('click', function () {
+      haptic('tap');
+      setTab('apps');
+    });
+
+    var ctxKeys = $('#ctxKeys');
+    if (ctxKeys) ctxKeys.addEventListener('click', function (ev) {
+      var btn = closestEl(ev.target, '[data-ctx-key]');
+      if (!btn) return;
+      press(btn.dataset.ctxKey, btn);
+    });
+
+    var easy = $('#setEasy');
+    if (easy) easy.addEventListener('click', function () {
+      haptic('ok');
+      setAccess({ easy: !config.access.easy });
+    });
+
+    var haptics = $('#setHaptics');
+    if (haptics) haptics.addEventListener('click', function () {
+      var turningOn = !config.access.haptics;
+      if (!turningOn) haptic('back');
+      setAccess({ haptics: turningOn });
+      // Confirm only after the toggle is on, otherwise it would be silent.
+      if (turningOn) haptic('success');
+    });
+
+    var motion = $('#setMotion');
+    if (motion) motion.addEventListener('click', function () {
+      haptic('tap');
+      setAccess({ motion: !config.access.motion });
+    });
+
+    var done = $('#btnCustomDone');
+    if (done) done.addEventListener('click', function () {
+      haptic('tap');
+      goRemote();
+    });
+
+    var customize = $('#btnCustomize');
+    if (customize) customize.addEventListener('click', function () {
+      haptic('tap');
+      setTab('customize');
+    });
+
+    $$('[data-panel-back]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        haptic('tap');
+        goRemote();
+      });
+    });
+    $$('#moreSheet [data-close-sheet]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        haptic('tap');
+        closeSheet();
+      });
+    });
+    $$('#moreSheet [data-open-panel]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        haptic('tap');
+        setTab(btn.dataset.openPanel);
+      });
+    });
+
+    var row = $('#tileRow');
+    if (row) row.addEventListener('click', function (ev) {
+      var btn = closestEl(ev.target, '[data-action-id]');
+      if (!btn) return;
+      var tile = findTile(btn.dataset.actionId);
+      if (tile) runAction(tile, btn);
+    });
+  }
+
+  function closeModals() {
+    var tile = $('#tileModal');
+    if (tile) tile.hidden = true;
+    var macro = $('#macroModal');
+    if (macro) macro.hidden = true;
+  }
+
+  /* ---------- customization UI ---------- */
+  var tileDraft = null;
+  var macroDraft = null;
+
+  function keyOptionsHtml(selected) {
+    return KEY_OPTIONS.map(function (key) {
+      return '<option value="' + esc(key.name) + '"' + (key.name === selected ? ' selected' : '') + '>' +
+        esc(key.label) + '</option>';
+    }).join('');
+  }
+
+  function iconOptionsHtml(selected) {
+    return ICON_OPTIONS.map(function (name) {
+      return '<option value="' + esc(name) + '"' + (name === selected ? ' selected' : '') + '>' +
+        esc(name.replace(/-/g, ' ')) + '</option>';
+    }).join('');
+  }
+
+  function macroOptionsHtml(selected) {
+    if (!config.macros.length) return '<option value="">No macros yet</option>';
+    return config.macros.map(function (macro) {
+      return '<option value="' + esc(macro.id) + '"' + (macro.id === selected ? ' selected' : '') + '>' +
+        esc(macro.name) + '</option>';
+    }).join('');
+  }
+
+  function actionDescription(tile) {
+    if (tile.type === 'key') return 'Key · ' + (KEY_LABELS[tile.value] || tile.value);
+    if (tile.type === 'macro') {
+      var macro = findMacro(tile.value);
+      return 'Macro · ' + (macro ? macro.name : 'missing');
+    }
+    if (tile.type === 'launch') return 'App · ' + tile.value;
+    return 'Text · ' + tile.value;
+  }
+
+  function gestureOptionsHtml(action) {
+    var current = actionToOption(action);
+    var items = [{ value: 'none', label: 'None' }];
+    GESTURE_KEYS.forEach(function (key) {
+      items.push({ value: 'key:' + key, label: KEY_LABELS[key] || key });
+    });
+    config.macros.forEach(function (macro) {
+      items.push({ value: 'macro:' + macro.id, label: 'Macro · ' + macro.name });
+    });
+    var found = items.some(function (item) { return item.value === current; });
+    if (!found) items.push({ value: current, label: actionLabel(action) });
+    return items.map(function (item) {
+      return '<option value="' + esc(item.value) + '"' + (item.value === current ? ' selected' : '') + '>' +
+        esc(item.label) + '</option>';
+    }).join('');
+  }
+
+  function toggleHtml(cmd, on) {
+    return '<button class="toggle' + (on ? ' on' : '') + '" data-cust="' + cmd + '" aria-pressed="' + on + '"><span></span></button>';
+  }
+
+  function segHtml(cmd, value, label, current) {
+    return '<button class="' + (current === value ? 'on' : '') + '" data-cust="' + cmd + '" data-value="' + value + '">' + label + '</button>';
+  }
+
+  function renderCustomize() {
+    var root = $('#customizeBody');
+    if (!root) return;
+
+    var swatches = THEME_SWATCHES.map(function (color) {
+      return '<button class="swatch' + (config.theme.accent.toUpperCase() === color ? ' on' : '') +
+        '" data-cust="accent" data-accent="' + color + '" style="--sw:' + color + '" aria-label="Accent ' + color + '"></button>';
+    }).join('');
+
+    var tileRows = config.tiles.length ? config.tiles.map(function (tile, index) {
+      return '<div class="tile-row">' +
+        '<span class="ticon">' + icon(safeIcon(tile.icon)) + '</span>' +
+        '<span class="tmeta"><b>' + esc(tile.label || 'Untitled') + '</b><span>' + esc(actionDescription(tile)) + '</span></span>' +
+        '<button class="iconbtn" data-cust="tile-up" data-index="' + index + '"' + (index === 0 ? ' disabled' : '') + ' aria-label="Move up">' + icon('chevron-up') + '</button>' +
+        '<button class="iconbtn" data-cust="tile-down" data-index="' + index + '"' + (index === config.tiles.length - 1 ? ' disabled' : '') + ' aria-label="Move down">' + icon('chevron-down') + '</button>' +
+        '<button class="iconbtn" data-cust="tile-edit" data-index="' + index + '" aria-label="Edit">' + icon('pencil') + '</button>' +
+        '<button class="iconbtn danger" data-cust="tile-del" data-index="' + index + '" aria-label="Delete">' + icon('trash-2') + '</button>' +
+        '</div>';
+    }).join('') : '<div class="empty-cust">No shortcut buttons yet. Add one and it appears under the rails.</div>';
+
+    var macroRows = config.macros.length ? config.macros.map(function (macro, index) {
+      return '<div class="macro-row">' +
+        '<span class="ticon">' + icon('star') + '</span>' +
+        '<span class="tmeta"><b>' + esc(macro.name) + '</b><span>' + macro.steps.length +
+          ' step' + (macro.steps.length === 1 ? '' : 's') + '</span></span>' +
+        '<button class="iconbtn" data-cust="macro-test" data-index="' + index + '" aria-label="Test">' + icon('play') + '</button>' +
+        '<button class="iconbtn" data-cust="macro-edit" data-index="' + index + '" aria-label="Edit">' + icon('pencil') + '</button>' +
+        '<button class="iconbtn danger" data-cust="macro-del" data-index="' + index + '" aria-label="Delete">' + icon('trash-2') + '</button>' +
+        '</div>';
+    }).join('') : '<div class="empty-cust">No macros yet. A macro can press keys, open an app and wait between steps.</div>';
+
+    root.innerHTML = '' +
+      '<div class="cust-section"><div class="h2">Theme</div><div class="cust-card">' +
+        '<div class="cust-row"><div class="lab"><b>Accent</b><span>Rails, OK and glow</span></div><div class="swatches">' + swatches + '</div></div>' +
+        '<div class="cust-row"><div class="lab"><b>Fine tune</b><span>Pick any accent</span></div><input type="color" id="custAccent" value="' + config.theme.accent + '" aria-label="Accent color"></div>' +
+        '<div class="cust-row"><div class="lab"><b>Background</b><span>Base surface color</span></div><input type="color" id="custBg" value="' + config.theme.background + '" aria-label="Background color"></div>' +
+        '<div class="cust-row"><div class="lab"><b>Red glow</b><span>Softer with glow off</span></div>' + toggleHtml('toggle-glow', config.theme.glow) + '</div>' +
+        '<div class="cust-row"><div class="lab"><b>Labels</b><span>Show names under controls</span></div>' + toggleHtml('toggle-labels', config.theme.labels) + '</div>' +
+      '</div></div>' +
+      '<div class="cust-section"><div class="h2">Layout</div><div class="cust-card">' +
+        '<div class="cust-row"><div class="lab"><b>Pad size</b><span>Comfort vs. screen space</span></div><div class="segctl">' +
+          segHtml('pad', 'small', 'Small', config.layout.pad) +
+          segHtml('pad', 'medium', 'Medium', config.layout.pad) +
+          segHtml('pad', 'large', 'Large', config.layout.pad) +
+        '</div></div>' +
+        '<div class="cust-row"><div class="lab"><b>Volume rail</b><span>Left or right side</span></div><div class="segctl">' +
+          segHtml('volume', 'left', 'Left', config.layout.volumeSide) +
+          segHtml('volume', 'right', 'Right', config.layout.volumeSide) +
+        '</div></div>' +
+        '<div class="cust-row"><div class="lab"><b>Channel rail</b><span>Hide for a simpler remote</span></div>' + toggleHtml('toggle-channel', config.layout.showChannel) + '</div>' +
+      '</div></div>' +
+      '<div class="cust-section"><div class="h2">Comfort</div><div class="cust-card">' +
+        '<div class="cust-row"><div class="lab"><b>Larger controls</b><span>Bigger targets, always-on labels</span></div>' + toggleHtml('toggle-easy', config.access.easy) + '</div>' +
+        '<div class="cust-row"><div class="lab"><b>Touch feedback</b><span>A small tap for every key</span></div>' + toggleHtml('toggle-haptics', config.access.haptics) + '</div>' +
+        '<div class="cust-row"><div class="lab"><b>Motion effects</b><span>Ripples, glows and transitions</span></div>' + toggleHtml('toggle-motion', config.access.motion) + '</div>' +
+      '</div></div>' +
+      '<div class="cust-section"><div class="h2">Shortcut buttons</div><div class="tile-list">' + tileRows + '</div><button class="addrow" data-cust="tile-add">' + icon('plus') + ' Add a button</button></div>' +
+      '<div class="cust-section"><div class="h2">Macros</div><div class="macro-list">' + macroRows + '</div><button class="addrow" data-cust="macro-add">' + icon('plus') + ' New macro</button></div>' +
+      '<div class="cust-section"><div class="h2">Gestures</div><div class="cust-card">' +
+        '<div class="gesture-row"><div class="lab"><b>Long-press pad</b><span>Hold still for 0.5 s</span></div><select data-gesture="longPress" aria-label="Long press action">' + gestureOptionsHtml(config.gestures.longPress) + '</select></div>' +
+        '<div class="gesture-row"><div class="lab"><b>Two-finger tap</b><span>Tap with two fingers</span></div><select data-gesture="twoFingerTap" aria-label="Two finger tap action">' + gestureOptionsHtml(config.gestures.twoFingerTap) + '</select></div>' +
+        '<div class="cust-row"><div class="lab"><b>Two-finger slide</b><span>Slide up/down for volume</span></div>' + toggleHtml('toggle-two-volume', config.gestures.twoFingerVolume) + '</div>' +
+      '</div></div>' +
+      '<div class="cust-section"><div class="h2">Backup</div><div class="cust-card">' +
+        '<div class="macro-help">Your remote lives only on this phone. Export the JSON for a backup or to move it to another phone.</div>' +
+        '<textarea class="jsonbox" id="custJson" spellcheck="false">' + esc(JSON.stringify(config, null, 2)) + '</textarea>' +
+        '<div class="cust-actions"><button class="btn" data-cust="copy">Copy</button><button class="btn" data-cust="import">Import</button></div>' +
+        '<button class="cust-danger" data-cust="reset">Reset to the Xstream default</button>' +
+      '</div></div>';
+  }
+
+  function setTheme(patch) {
+    Object.keys(patch).forEach(function (key) { config.theme[key] = patch[key]; });
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+  }
+
+  function setLayout(patch) {
+    Object.keys(patch).forEach(function (key) { config.layout[key] = patch[key]; });
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+  }
+
+  function setAccess(patch) {
+    Object.keys(patch).forEach(function (key) { config.access[key] = patch[key]; });
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+    renderSettings();
+  }
+
+  function moveTile(index, delta) {
+    var target = index + delta;
+    if (target < 0 || target >= config.tiles.length) return;
+    var temp = config.tiles[index];
+    config.tiles[index] = config.tiles[target];
+    config.tiles[target] = temp;
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+  }
+
+  function openTileModal(index) {
+    var isNew = index == null || isNaN(index);
+    var source = isNew
+      ? { id: 'tile-' + Date.now(), label: '', icon: 'star', type: 'key', value: 'POWER', accent: false }
+      : config.tiles[index];
+    if (!source) return;
+    tileDraft = clone(source);
+    tileDraft.index = isNew ? null : Number(index);
+    $('#tileModalTitle').textContent = isNew ? 'New button' : 'Edit button';
+    $('#tileLabel').value = tileDraft.label || '';
+    $('#tileIcon').innerHTML = iconOptionsHtml(safeIcon(tileDraft.icon));
+    $('#tileIconPreview').innerHTML = icon(safeIcon(tileDraft.icon));
+    $('#tileType').value = tileDraft.type;
+    $('#tileKey').innerHTML = keyOptionsHtml(tileDraft.type === 'key' ? tileDraft.value : 'POWER');
+    $('#tileMacro').innerHTML = macroOptionsHtml(tileDraft.type === 'macro' ? tileDraft.value : '');
+    $('#tileUri').value = tileDraft.type === 'launch' ? tileDraft.value : '';
+    $('#tileText').value = tileDraft.type === 'text' ? tileDraft.value : '';
+    $('#tileAccent').checked = !!tileDraft.accent;
+    updateTileFields();
+    $('#tileModal').hidden = false;
+  }
+
+  function updateTileFields() {
+    var type = $('#tileType').value;
+    $('#tileKeyWrap').hidden = type !== 'key';
+    $('#tileMacroWrap').hidden = type !== 'macro';
+    $('#tileUriWrap').hidden = type !== 'launch';
+    $('#tileTextWrap').hidden = type !== 'text';
+  }
+
+  function saveTile() {
+    if (!tileDraft) return;
+    var type = $('#tileType').value;
+    var value = '';
+    if (type === 'key') value = $('#tileKey').value;
+    else if (type === 'macro') value = $('#tileMacro').value;
+    else if (type === 'launch') value = $('#tileUri').value.trim();
+    else if (type === 'text') value = $('#tileText').value;
+    if (!value) {
+      toast(type === 'macro' ? 'Create a macro first' : 'That action needs a value');
+      return;
+    }
+    var tile = {
+      id: tileDraft.id,
+      label: $('#tileLabel').value.trim() || 'Button',
+      icon: $('#tileIcon').value,
+      type: type,
+      value: value,
+      accent: $('#tileAccent').checked
+    };
+    if (tileDraft.index == null) {
+      if (config.tiles.length >= 12) { toast('Twelve shortcut buttons is the limit'); return; }
+      config.tiles.push(tile);
+    } else {
+      config.tiles[tileDraft.index] = tile;
+    }
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+    closeModals();
+    toast('Button saved');
+  }
+
+  function renderMacroSteps() {
+    var box = $('#macroSteps');
+    if (!box || !macroDraft) return;
+    if (!macroDraft.steps.length) {
+      box.innerHTML = '<div class="empty-step">No steps yet. Add a key, app, wait or text step.</div>';
+      return;
+    }
+    box.innerHTML = macroDraft.steps.map(function (step, index) {
+      var fields = '';
+      if (step.type === 'key') {
+        fields = '<select data-step-field="value" data-step-index="' + index + '">' + keyOptionsHtml(step.value) + '</select>';
+      } else if (step.type === 'launch') {
+        fields = '<input data-step-field="value" data-step-index="' + index + '" value="' + esc(step.value) + '" placeholder="https://...">';
+      } else if (step.type === 'text') {
+        fields = '<input data-step-field="value" data-step-index="' + index + '" value="' + esc(step.value) + '" placeholder="Text to send">';
+      } else {
+        fields = '<input type="number" min="0" max="10000" step="50" data-step-field="ms" data-step-index="' + index +
+          '" value="' + (Number(step.ms) || 0) + '"><span class="ms">ms</span>';
+      }
+      var label = step.type === 'launch' ? 'App' : step.type === 'key' ? 'Key' : step.type === 'text' ? 'Text' : 'Wait';
+      return '<div class="step-row">' +
+        '<span class="step-type">' + label + '</span>' +
+        '<div class="step-fields">' + fields + '</div>' +
+        '<div class="step-actions">' +
+          '<button class="iconbtn" data-step-act="up" data-step-index="' + index + '"' + (index === 0 ? ' disabled' : '') + ' aria-label="Move step up">' + icon('chevron-up') + '</button>' +
+          '<button class="iconbtn" data-step-act="down" data-step-index="' + index + '"' + (index === macroDraft.steps.length - 1 ? ' disabled' : '') + ' aria-label="Move step down">' + icon('chevron-down') + '</button>' +
+          '<button class="iconbtn danger" data-step-act="del" data-step-index="' + index + '" aria-label="Delete step">' + icon('trash-2') + '</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openMacroModal(index) {
+    var isNew = index == null || isNaN(index);
+    var source = isNew
+      ? { id: 'macro-' + Date.now(), name: 'New macro', steps: [] }
+      : config.macros[index];
+    if (!source) return;
+    macroDraft = clone(source);
+    macroDraft.index = isNew ? null : Number(index);
+    $('#macroModalTitle').textContent = isNew ? 'New macro' : 'Edit macro';
+    $('#macroName').value = macroDraft.name || 'New macro';
+    renderMacroSteps();
+    $('#macroModal').hidden = false;
+  }
+
+  function updateMacroStep(ev) {
+    if (!macroDraft) return;
+    var el = ev.target;
+    var field = el.dataset ? el.dataset.stepField : null;
+    var index = el.dataset ? Number(el.dataset.stepIndex) : -1;
+    var step = macroDraft.steps[index];
+    if (!field || !step) return;
+    if (field === 'ms') step.ms = Math.max(0, Math.min(10000, Number(el.value) || 0));
+    else step.value = el.value;
+  }
+
+  function onStepAction(ev) {
+    var btn = closestEl(ev.target, '[data-step-act]');
+    if (!btn || !macroDraft) return;
+    var index = Number(btn.dataset.stepIndex);
+    var action = btn.dataset.stepAct;
+    if (action === 'del') {
+      macroDraft.steps.splice(index, 1);
+    } else if (action === 'up' && index > 0) {
+      var up = macroDraft.steps[index - 1];
+      macroDraft.steps[index - 1] = macroDraft.steps[index];
+      macroDraft.steps[index] = up;
+    } else if (action === 'down' && index < macroDraft.steps.length - 1) {
+      var down = macroDraft.steps[index + 1];
+      macroDraft.steps[index + 1] = macroDraft.steps[index];
+      macroDraft.steps[index] = down;
+    }
+    renderMacroSteps();
+  }
+
+  function addMacroStep(type) {
+    if (!macroDraft) return;
+    if (type === 'key') macroDraft.steps.push({ type: 'key', value: 'OK' });
+    else if (type === 'launch') macroDraft.steps.push({ type: 'launch', value: 'https://www.youtube.com/tv' });
+    else if (type === 'text') macroDraft.steps.push({ type: 'text', value: '' });
+    else macroDraft.steps.push({ type: 'wait', ms: 500 });
+    renderMacroSteps();
+  }
+
+  function saveMacro() {
+    if (!macroDraft) return;
+    var name = $('#macroName').value.trim() || 'Macro';
+    if (!macroDraft.steps.length) { toast('Add at least one step'); return; }
+    for (var i = 0; i < macroDraft.steps.length; i++) {
+      var step = macroDraft.steps[i];
+      if ((step.type === 'key' || step.type === 'launch' || step.type === 'text') && !String(step.value || '').trim()) {
+        toast('Complete step ' + (i + 1));
+        return;
+      }
+      if (step.type === 'wait') step.ms = Math.max(0, Math.min(10000, Number(step.ms) || 0));
+    }
+    var macro = { id: macroDraft.id, name: name.slice(0, 40), steps: macroDraft.steps };
+    if (macroDraft.index == null) config.macros.push(macro);
+    else config.macros[macroDraft.index] = macro;
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+    closeModals();
+    toast('Macro saved');
+  }
+
+  function testMacro(macro) {
+    if (!macro || !macro.steps.length) { toast('Add a step first'); return; }
+    if (!Native.macro) { toast('Install the new APK for macros'); return; }
+    buzz(8);
+    toast('Testing ' + (macro.name || 'macro'));
+    try { Native.macro(JSON.stringify({ name: macro.name || 'Macro', steps: macro.steps })); }
+    catch (e) { toast(String(e)); }
+  }
+
+  function deleteMacro(index) {
+    if (!config.macros[index]) return;
+    if (!confirm('Delete “' + config.macros[index].name + '”?')) return;
+    var id = config.macros[index].id;
+    config.macros.splice(index, 1);
+    config.tiles.forEach(function (tile) {
+      if (tile.type === 'macro' && tile.value === id) { tile.type = 'key'; tile.value = 'POWER'; }
+    });
+    ['longPress', 'twoFingerTap'].forEach(function (key) {
+      var action = config.gestures[key];
+      if (action && action.type === 'macro' && action.value === id) config.gestures[key] = { type: 'none' };
+    });
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+    toast('Macro deleted');
+  }
+
+  function copyConfig() {
+    var box = $('#custJson');
+    if (!box) return;
+    var text = JSON.stringify(config, null, 2);
+    box.value = text;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { toast('Copied'); }, function () { fallbackCopy(box); });
+    } else {
+      fallbackCopy(box);
+    }
+  }
+
+  function fallbackCopy(box) {
+    box.focus();
+    box.select();
+    try { document.execCommand('copy'); toast('Copied'); }
+    catch (e) { toast('Select and copy manually'); }
+  }
+
+  function importConfig() {
+    var box = $('#custJson');
+    if (!box) return;
+    var raw;
+    try { raw = JSON.parse(box.value); }
+    catch (e) { toast('That JSON is not valid'); return; }
+    if (!raw || typeof raw !== 'object') { toast('Paste a remote config object'); return; }
+    config = normalizeConfig(raw);
+    saveConfig();
+    applyConfig();
+    renderCustomize();
+    toast('Remote imported');
+  }
+
+  function bindCustomizer() {
+    var body = $('#customizeBody');
+    if (body) {
+      body.addEventListener('click', function (ev) {
+        var el = closestEl(ev.target, '[data-cust]');
+        if (!el) return;
+        var cmd = el.dataset.cust;
+        if (cmd === 'accent') setTheme({ accent: el.dataset.accent });
+        else if (cmd === 'toggle-glow') setTheme({ glow: !config.theme.glow });
+        else if (cmd === 'toggle-labels') setTheme({ labels: !config.theme.labels });
+        else if (cmd === 'toggle-easy') setAccess({ easy: !config.access.easy });
+        else if (cmd === 'toggle-haptics') setAccess({ haptics: !config.access.haptics });
+        else if (cmd === 'toggle-motion') setAccess({ motion: !config.access.motion });
+        else if (cmd === 'toggle-channel') setLayout({ showChannel: !config.layout.showChannel });
+        else if (cmd === 'toggle-two-volume') {
+          config.gestures.twoFingerVolume = !config.gestures.twoFingerVolume;
+          saveConfig();
+          renderCustomize();
+        }
+        else if (cmd === 'pad') setLayout({ pad: el.dataset.value });
+        else if (cmd === 'volume') setLayout({ volumeSide: el.dataset.value });
+        else if (cmd === 'tile-add') openTileModal(null);
+        else if (cmd === 'tile-edit') openTileModal(Number(el.dataset.index));
+        else if (cmd === 'tile-up') moveTile(Number(el.dataset.index), -1);
+        else if (cmd === 'tile-down') moveTile(Number(el.dataset.index), 1);
+        else if (cmd === 'tile-del') {
+          var index = Number(el.dataset.index);
+          if (config.tiles[index] && confirm('Remove “' + config.tiles[index].label + '”?')) {
+            config.tiles.splice(index, 1);
+            saveConfig();
+            applyConfig();
+            renderCustomize();
+            toast('Button removed');
+          }
+        }
+        else if (cmd === 'macro-add') openMacroModal(null);
+        else if (cmd === 'macro-edit') openMacroModal(Number(el.dataset.index));
+        else if (cmd === 'macro-test') testMacro(config.macros[Number(el.dataset.index)]);
+        else if (cmd === 'macro-del') deleteMacro(Number(el.dataset.index));
+        else if (cmd === 'copy') copyConfig();
+        else if (cmd === 'import') importConfig();
+        else if (cmd === 'reset') {
+          if (confirm('Reset the remote to the Xstream default?')) {
+            config = clone(DEFAULT_CONFIG);
+            saveConfig();
+            applyConfig();
+            renderCustomize();
+            toast('Remote reset');
+          }
+        }
+      });
+
+      body.addEventListener('input', function (ev) {
+        var el = ev.target;
+        if (el.id === 'custAccent') {
+          if (isHex(el.value)) {
+            config.theme.accent = el.value.toUpperCase();
+            saveConfig();
+            applyConfig();
+          }
+        } else if (el.id === 'custBg') {
+          if (isHex(el.value)) {
+            config.theme.background = el.value.toUpperCase();
+            saveConfig();
+            applyConfig();
+          }
+        }
+      });
+
+      body.addEventListener('change', function (ev) {
+        var el = ev.target;
+        if (el.id === 'custAccent' || el.id === 'custBg') {
+          renderCustomize();
+          return;
+        }
+        if (el.dataset && el.dataset.gesture) {
+          config.gestures[el.dataset.gesture] = actionFromOption(el.value);
+          saveConfig();
+        }
+      });
+    }
+
+    var type = $('#tileType');
+    if (type) type.addEventListener('change', updateTileFields);
+    var iconSelect = $('#tileIcon');
+    if (iconSelect) iconSelect.addEventListener('change', function () {
+      $('#tileIconPreview').innerHTML = icon(safeIcon(iconSelect.value));
+    });
+    var tileSave = $('#tileSave');
+    if (tileSave) tileSave.addEventListener('click', saveTile);
+    var macroSave = $('#macroSave');
+    if (macroSave) macroSave.addEventListener('click', saveMacro);
+    var macroTestBtn = $('#macroTest');
+    if (macroTestBtn) macroTestBtn.addEventListener('click', function () {
+      if (!macroDraft) return;
+      testMacro({ name: $('#macroName').value.trim() || 'Macro', steps: macroDraft.steps });
+    });
+    var addKey = $('#macroAddKey');
+    if (addKey) addKey.addEventListener('click', function () { addMacroStep('key'); });
+    var addApp = $('#macroAddApp');
+    if (addApp) addApp.addEventListener('click', function () { addMacroStep('launch'); });
+    var addWait = $('#macroAddWait');
+    if (addWait) addWait.addEventListener('click', function () { addMacroStep('wait'); });
+    var addText = $('#macroAddText');
+    if (addText) addText.addEventListener('click', function () { addMacroStep('text'); });
+
+    var stepBox = $('#macroSteps');
+    if (stepBox) {
+      stepBox.addEventListener('input', updateMacroStep);
+      stepBox.addEventListener('change', updateMacroStep);
+      stepBox.addEventListener('click', onStepAction);
+    }
+
+    $$('[data-close-modal]').forEach(function (el) {
+      el.addEventListener('click', closeModals);
+    });
+  }
+
   /* ---------- native events ---------- */
   window.__tv = function (ev) {
     if (!ev || !ev.type) return;
     if (ev.type === 'state') onState(ev);
+    else if (ev.type === 'pair') onPair(ev);
     else if (ev.type === 'scan') onScan(ev);
     else if (ev.type === 'volume') {
-      var before = state.level;
       applyVolume(ev.level, ev.max, ev.muted);
-      if (before !== state.level) showHud(ev.level, ev.muted);
     }
-    else if (ev.type === 'app') { state.app = ev.app || ''; $('#chipAppText').textContent = appName(state.app); renderSettings(); }
+    else if (ev.type === 'app') {
+      state.app = ev.app || '';
+      var chipApp = $('#chipAppText');
+      if (chipApp) chipApp.textContent = appName(state.app);
+      renderContext();
+      renderSettings();
+    }
+    else if (ev.type === 'macro') {
+      if (ev.status === 'error') {
+        haptic('error');
+        toast(ev.message || 'Macro failed');
+      } else if (ev.status === 'done') {
+        haptic('success');
+        toast((ev.name || 'Macro') + ' done');
+      }
+    }
     else if (ev.type === 'toast') toast(ev.msg || '');
   };
 
   window.__back = function () {
+    var pair = $('#pairModal');
+    if (pair && !pair.hidden) { cancelPairingUI(); return; }
+    var modal = $('#tileModal');
+    var macroModal = $('#macroModal');
+    if ((modal && !modal.hidden) || (macroModal && !macroModal.hidden)) {
+      closeModals();
+      return;
+    }
+    var sheet = $('#moreSheet');
+    if (sheet && !sheet.hidden) { closeSheet(); return; }
     if (!$('#screenMain').hidden) {
-      if (currentTab !== 'remote') { setTab('remote'); return; }
+      if (currentTab !== 'remote') { goRemote(); return; }
       try { Native.exit(); } catch (e) {}
       return;
     }
@@ -1095,15 +3353,34 @@
     try { Native.exit(); } catch (e) {}
   };
 
+  /* ---------- viewport stage ---------- */
+  var fitLastWidth = 0;
+  function fitShell() {
+    var width = window.innerWidth || 390;
+    if (width === fitLastWidth) return;
+    fitLastWidth = width;
+    var height = window.innerHeight || 844;
+    var scale = Math.min(width / 390, height / 844);
+    if (!isFinite(scale) || scale <= 0) scale = 1;
+    document.documentElement.style.setProperty('--app-scale', String(scale));
+  }
+  fitShell();
+  window.addEventListener('resize', fitShell);
+
   /* ---------- boot ---------- */
   var tabParam = (location.search.match(/[?&]tab=([a-z]+)/) || [])[1];
+  applyConfig();
+  bindRemoteControls();
+  bindCustomizer();
   if (tabParam && document.getElementById('tab-' + tabParam)) setTab(tabParam);
   else setTab('remote');
   renderState();
 
   var saved = '';
+  var savedPaired = true;
   try { saved = Native.savedHost() || ''; } catch (e) {}
-  if (saved) {
+  try { if (saved && Native && Native.isPaired) savedPaired = !!Native.isPaired(saved); } catch (e) {}
+  if (saved && savedPaired) {
     startConnect(saved);
   } else {
     showConnect();

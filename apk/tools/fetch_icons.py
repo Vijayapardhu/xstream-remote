@@ -26,6 +26,8 @@ NAMES = [
     "delete", "corner-down-left", "monitor", "radio", "sliders-horizontal",
     "activity", "arrow-up-right", "chevrons-up", "chevrons-down", "maximize",
     "minimize", "volume-off", "circle-play", "square", "minus", "sun",
+    "more-horizontal",
+    "pencil",
 ]
 
 

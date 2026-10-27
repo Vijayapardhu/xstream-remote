@@ -5,8 +5,8 @@ Set-Location $root
 
 $bt = if ($env:ANDROID_BUILD_TOOLS) { $env:ANDROID_BUILD_TOOLS } else { 'C:\cmdline-tools\build-tools\34.0.0' }
 $androidJar = if ($env:ANDROID_JAR) { $env:ANDROID_JAR } else { 'C:\cmdline-tools\platforms\android-34\android.jar' }
-$versionCode = 1
-$versionName = '1.0'
+$versionCode = 2
+$versionName = '2.0'
 $aapt2 = Join-Path $bt 'aapt2.exe'
 $d8 = Join-Path $bt 'd8.bat'
 $zipalign = Join-Path $bt 'zipalign.exe'
@@ -74,13 +74,6 @@ if ($existing) { $existing.Delete() }
 $assetMap = @(
     'assets\ui\index.html|assets/ui/index.html'
 )
-if ((Test-Path (Join-Path $root 'assets\client.pem')) -and
-    (Test-Path (Join-Path $root 'assets\client.key'))) {
-    $assetMap += 'assets\client.pem|assets/client.pem'
-    $assetMap += 'assets\client.key|assets/client.key'
-} else {
-    Write-Warning 'No paired client.pem/client.key in assets; the APK will build but cannot connect (v1).'
-}
 foreach ($entry in $assetMap) {
     $pair = $entry.Split('|')
     $old = $zip.GetEntry($pair[1])

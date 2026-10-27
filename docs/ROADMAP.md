@@ -28,6 +28,39 @@ instant feedback, and nothing on screen that is not useful.
 8. **Accessible.** TalkBack labels, 48 dp targets, high contrast, reduced motion,
    large text, and no colour-only status.
 
+## Status — v2 polish done (2026)
+
+The v2 polish/redesign is complete and the repo is public as a universal Android
+TV remote with per-install pairing (no bundled client key, no APK in releases).
+
+- **v2.0 Universal:** in-app pairing on port 6467, per-install RSA client
+  certificates generated in pure Java DER, TV certificate pinning, per-host
+  cert/fingerprint storage, `TvBridge.forget()` clears host + pin + `peerCert`
+  + `model`.
+- **v2.1 Minimal:** red-glow UI, themes, labels, Easy/larger-controls mode,
+  touch-feedback + motion toggles, app-aware context bar (Live → Guide/Options/
+  Captions; Media → Search/Captions/Options; Other → Recent apps/Search/Home),
+  media playback rail, 22-key grid, dynamic mute icon, volume repeat-on-hold,
+  redesigned dialogs, Numbers pad, import/export/reset, macros, gestures,
+  config v3 migration.
+- **Haptics:** centralized `Haptics.java` with primitive thud/click/tick
+  patterns (deeper feel), `tick` for D-pad/volume, `back` for Back, `ok` for
+  center, haptics-toggle confirm; Numbers pad and pad-center haptics.
+- **Real app icons:** Simple Icons SVGs for YouTube/Netflix/Spotify/Google
+  Play/Airtel plus real favicons for Hotstar/Prime Video; inlined into the
+  WebView via `web/brands.svg` (`make_brands.py` + `make_ui.py`).
+- **Widgets:** `AppWidgetProvider` + `RemoteViews` 2×2 and 4×2 widgets
+  (`Widget2x2Provider`, `WidgetRemoteProvider`, `WidgetActionReceiver`); widget
+  taps reconnect/send a key through `MainActivity`.
+- **Launcher icon:** red-glow "X" mark; adaptive + round + monochrome vectors,
+  legacy PNG mipmaps, and a 512px store asset.
+- **Landing page:** static deployable site under `site/`.
+- **Docs:** this roadmap and `ARCHITECTURE.md` updated; `README.md` and
+  `INSTALL.md` rewritten for v2.
+
+Remaining (future): multi-TV manager, real app icons sourced from Play Store,
+validation on a second TV model, Quick Settings tile, media notification.
+
 ## v1 baseline (done)
 
 - 85.7 KB APK, Android 7.0+, target 34.

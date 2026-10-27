@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#07080B"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/widget_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-medium"
+        android:text="Xstream Remote"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/widget_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2px"
+        android:fontFamily="sans-serif"
+        android:text="Remote control"
+        android:textColor="#9AA5B1"
+        android:textSize="10sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:layout_marginTop="8px"
+        android:layout_marginBottom="8px"
+        android:background="#2A2E3A" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/btn_power"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Power"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_back"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Back"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_home"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Home"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_ok"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="OK"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:weightSum="4">
+
+        <Button
+            android:id="@+id/btn_vol_down"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Vol \u2212"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_mute"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Mute"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_vol_up"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Vol +"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_play_pause"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_margin="3px"
+            android:layout_weight="1"
+            android:background="@drawable/widget_key_bg"
+            android:fontFamily="sans-serif-medium"
+            android:padding="6px"
+            android:text="Play"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</LinearLayout>

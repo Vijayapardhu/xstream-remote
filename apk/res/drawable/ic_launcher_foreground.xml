@@ -5,16 +5,20 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- d-pad ring -->
+    <!-- soft glow behind the X -->
     <path
         android:fillColor="#00000000"
-        android:pathData="M32,54 A22,22 0 1,1 76,54 A22,22 0 1,1 32,54"
+        android:pathData="M36,36 L72,72 M72,36 L36,72"
+        android:strokeAlpha="0.30"
         android:strokeColor="#FFFFFF"
         android:strokeLineCap="round"
-        android:strokeWidth="6.4" />
+        android:strokeWidth="14" />
 
-    <!-- centre dot -->
+    <!-- X mark -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M49,54 A5,5 0 1,1 59,54 A5,5 0 1,1 49,54" />
+        android:fillColor="#00000000"
+        android:pathData="M38,38 L70,70 M70,38 L38,70"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="9" />
 </vector>
